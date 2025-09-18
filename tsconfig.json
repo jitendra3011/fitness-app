@@ -5,6 +5,12 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@admin/*": [
+        "components/admin/*"
+      ],
+      "@lib/*": [
+        "src/lib/*"
       ]
     }
   },

@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
@@ -6,7 +6,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Sidebar } from '@/components/ui/sidebar';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -21,6 +21,13 @@ export default function TabLayout() {
             <Sidebar.Trigger>
               <IconSymbol size={24} name="line.3.horizontal" color={tintColor ?? Colors[colorScheme ?? 'light'].tint} />
             </Sidebar.Trigger>
+          </View>
+        ),
+        headerRight: ({ tintColor }) => (
+          <View style={{ paddingRight: 12 }}>
+            <Pressable onPress={() => router.push('/admin/users' as any)}>
+              <IconSymbol size={24} name="person.crop.circle" color={tintColor ?? Colors[colorScheme ?? 'light'].tint} />
+            </Pressable>
           </View>
         ),
         tabBarButton: HapticTab,

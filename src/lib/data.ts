@@ -1,12 +1,14 @@
 import type { Leaderboard, LeaderboardEntry } from './types';
 
-const users = [
+export const mockUsers = [
   {
     id: 'u1',
     fullName: 'Aarav Kumar',
     avatarUrl: 'https://i.pravatar.cc/100?img=11',
     state: 'MH',
     village: 'Pune',
+    email: 'aarav.k@example.com',
+    phone: '987-111-2222',
   },
   {
     id: 'u2',
@@ -14,6 +16,8 @@ const users = [
     avatarUrl: 'https://i.pravatar.cc/100?img=12',
     state: 'KA',
     village: 'Bengaluru',
+    email: 'priya.s@example.com',
+    phone: '987-222-3333',
   },
   {
     id: 'u3',
@@ -21,6 +25,8 @@ const users = [
     avatarUrl: 'https://i.pravatar.cc/100?img=13',
     state: 'DL',
     village: null,
+    email: 'rahul.v@example.com',
+    phone: '987-333-4444',
   },
   {
     id: 'u4',
@@ -28,6 +34,8 @@ const users = [
     avatarUrl: 'https://i.pravatar.cc/100?img=14',
     state: 'TN',
     village: 'Chennai',
+    email: 'neha.s@example.com',
+    phone: '987-444-5555',
   },
   {
     id: 'u5',
@@ -35,11 +43,13 @@ const users = [
     avatarUrl: 'https://i.pravatar.cc/100?img=15',
     state: 'GJ',
     village: 'Surat',
+    email: 'vikram.p@example.com',
+    phone: '987-555-6666',
   },
 ];
 
 function entry(userIdx: number, score: number, metric: LeaderboardEntry['metric']): LeaderboardEntry {
-  return { user: users[userIdx], score, metric };
+  return { user: mockUsers[userIdx], score, metric };
 }
 
 export const mockLeaderboard: Leaderboard = {
