@@ -13,6 +13,8 @@ const activities: { name: ActivityType; href: string; description: string; image
 	{ name: 'Sit-ups', href: '/activities/sit-ups', description: 'Count your reps and check form.', imageId: 'sit-ups-card' },
 	{ name: 'Push-ups', href: '/activities/push-ups', description: 'Build upper body strength.', imageId: 'push-ups-card' },
 	{ name: 'High Jump', href: '/activities/high-jump', description: 'Test your vertical leap.', imageId: 'high-jump-card' },
+	{ name: 'Shuttle Run', href: '/activities/shuttle-run', description: 'Improve your agility and speed.', imageId: 'shuttle-run-card' },
+	{ name: 'Endurance Run', href: '/activities/endurance-run', description: 'Boost your cardiovascular health.', imageId: 'endurance-run-card' },
 ];
 
 export default function ActivitiesTab() {

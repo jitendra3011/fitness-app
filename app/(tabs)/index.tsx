@@ -15,6 +15,8 @@ const activities: { name: ActivityType; href: string; description: string; image
 	{ name: 'Sit-ups', href: '/activities/sit-ups', description: 'Count your reps and check form.', imageId: 'sit-ups-card' },
 	{ name: 'Push-ups', href: '/activities/push-ups', description: 'Build upper body strength.', imageId: 'push-ups-card' },
 	{ name: 'High Jump', href: '/activities/high-jump', description: 'Test your vertical leap.', imageId: 'high-jump-card' },
+	{ name: 'Shuttle Run', href: '/activities/shuttle-run', description: 'Improve your agility and speed.', imageId: 'shuttle-run-card' },
+	{ name: 'Endurance Run', href: '/activities/endurance-run', description: 'Boost your cardiovascular health.', imageId: 'endurance-run-card' },
 ];
 
 export default function HomeScreen() {
@@ -22,7 +24,7 @@ export default function HomeScreen() {
 
 	return (
 		<ScrollView contentContainerStyle={styles.container}>
-    <ThemedView style={styles.section}>
+			<ThemedView style={styles.section}>
 				<ThemedText type="title">Welcome back, Athlete!</ThemedText>
 				<ThemedText type="default">Here’s your performance overview. Ready to set a new record?</ThemedText>
 			</ThemedView>
@@ -90,16 +92,18 @@ function StatCard({ title, value, subtitle }: { title: string; value: string; su
 function ActivityCard({ name, description, imageId }: { name: ActivityType; description: string; imageId: string }) {
 	const placeholder = PlaceHolderImages.find((p) => p.id === imageId);
 	return (
-    <Pressable style={styles.activityCard} onPress={() => {
-            const map: Record<ActivityType, string> = {
-                'Running': '/activities/running',
-                'Long Jump': '/activities/long-jump',
-                'Sit-ups': '/activities/sit-ups',
-                'Push-ups': '/activities/push-ups',
-                'High Jump': '/activities/high-jump',
-            };
-            router.push(map[name] as any);
-        }}>
+		<Pressable style={styles.activityCard} onPress={() => {
+			const map: Record<ActivityType, string> = {
+				'Running': '/activities/running',
+				'Long Jump': '/activities/long-jump',
+				'Sit-ups': '/activities/sit-ups',
+				'Push-ups': '/activities/push-ups',
+				'High Jump': '/activities/high-jump',
+				'Shuttle Run': '/activities/shuttle-run',
+				'Endurance Run': '/activities/endurance-run',
+			};
+			router.push(map[name] as any);
+		}}>
 			{placeholder?.imageUrl ? (
 				<Image source={{ uri: placeholder.imageUrl }} style={styles.activityImage} contentFit="cover" />
 			) : null}

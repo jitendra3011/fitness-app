@@ -63,6 +63,14 @@ function SidebarLinks() {
         <IconSymbol size={20} name="person.fill" color="#9CA3AF" />
         <ThemedText type="defaultSemiBold" style={styles.navText}>Profile</ThemedText>
       </Pressable>
+      <Pressable style={styles.navItem} onPress={() => { router.push('/signup'); close(); }}>
+        <IconSymbol size={20} name="person.fill" color="#9CA3AF" />
+        <ThemedText type="defaultSemiBold" style={styles.navText}>Sign Up</ThemedText>
+      </Pressable>
+      <Pressable style={styles.navItem} onPress={() => { router.push('/login'); close(); }}>
+        <IconSymbol size={20} name="person.fill" color="#9CA3AF" />
+        <ThemedText type="defaultSemiBold" style={styles.navText}>Login</ThemedText>
+      </Pressable>
     </View>
   );
 }

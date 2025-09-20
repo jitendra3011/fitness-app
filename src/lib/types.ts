@@ -3,7 +3,11 @@ export type ActivityType =
   | 'Long Jump'
   | 'Sit-ups'
   | 'Push-ups'
-  | 'High Jump';
+  | 'High Jump'
+  | 'Shuttle Run'
+  | 'Endurance Run';
+  
+
 
 export type LeaderboardMetricUnit = 'km' | 'reps' | 'cm' | 'pts' | 'seconds';
 
