@@ -1,150 +1,289 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
+import { router } from 'expo-router';
+import { RotateCcw, X } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
-function formatTime(totalSeconds: number) {
-	const mins = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-	const secs = (totalSeconds % 60).toString().padStart(2, '0');
-	return `${mins}:${secs}`;
-}
+export default function CameraScreen() {
+  const [facing, setFacing] = useState<CameraType>('back');
+  const [permission, requestPermission] = useCameraPermissions();
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const cameraRef = useRef<CameraView>(null);
 
-export default function RunningScreen() {
-	const [phase, setPhase] = useState<'scan' | 'countdown' | 'active' | 'finished'>('scan');
-	const [countdown, setCountdown] = useState(3);
-	const [time, setTime] = useState(0);
-	const [distance, setDistance] = useState(0);
-	const [stamina, setStamina] = useState(100);
+  useEffect(() => {
+    if (permission?.granted) {
+      // Auto start recording after 1 second
+      const timer = setTimeout(() => {
+        startRecording();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [permission?.granted]);
 
-	const startBodyScan = () => {
-		Alert.alert(
-			'Body Scan', 
-			'Body scan simulation completed! Ready to start running?',
-			[
-				{ text: 'Cancel', style: 'cancel' },
-				{ text: 'Continue', onPress: () => setPhase('countdown') }
-			]
-		);
-	};
+  useEffect(() => {
+    if (isRecording) {
+      const interval = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isRecording]);
 
-	useEffect(() => {
-		if (phase === 'countdown') {
-			if (countdown > 0) {
-				const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
-				return () => clearTimeout(t);
-			} else {
-				setPhase('active');
-			}
-		}
-	}, [phase, countdown]);
+  const startRecording = async () => {
+    if (!cameraRef.current || isRecording) return;
+    
+    try {
+      setIsRecording(true);
+      setRecordingTime(0);
+      const video = await cameraRef.current.recordAsync({
+        maxDuration: 30, // 30 seconds max
+      });
+      console.log('Video recorded:', video?.uri);
+    } catch (error) {
+      console.error('Recording failed:', error);
+    }
+  };
 
-	useEffect(() => {
-		if (phase !== 'active') return;
-		const id = setInterval(() => {
-			setTime((t) => t + 1);
-			setDistance((d) => d + 0.003);
-			setStamina((s) => Math.max(0, s - 0.2));
-		}, 1000);
-		return () => clearInterval(id);
-	}, [phase]);
+  const stopRecording = async () => {
+    if (!cameraRef.current || !isRecording) return;
+    
+    try {
+      cameraRef.current.stopRecording();
+      setIsRecording(false);
+      setRecordingTime(0);
+      
+      Alert.alert(
+        'Body Scan Complete',
+        'Your body scan has been recorded successfully! Ready to start your run?',
+        [
+          { text: 'Scan Again', style: 'cancel' },
+          { 
+            text: 'Start Running', 
+            onPress: () => router.back()
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Stop recording failed:', error);
+    }
+  };
 
-	if (phase === 'scan') {
-		return (
-			<ThemedView style={styles.container}>
-				<View style={styles.scanBox}>
-					<ThemedText type="subtitle">Prepare for Running</ThemedText>
-					<ThemedText type="default">Begin with an AI-powered body scan to check your readiness.</ThemedText>
-					<Pressable style={styles.primaryBtn} onPress={startBodyScan}>
-						<ThemedText type="defaultSemiBold">Start with Body Scan</ThemedText>
-					</Pressable>
-				</View>
-			</ThemedView>
-		);
-	}
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
 
-	if (phase === 'countdown') {
-		return (
-			<ThemedView style={[styles.container, styles.center]}>
-				<ThemedText type="default">Get Ready...</ThemedText>
-				<ThemedText type="title">{countdown}</ThemedText>
-			</ThemedView>
-		);
-	}
+  if (!permission) {
+    return (
+      <ThemedView style={styles.container}>
+        <ThemedText>Loading camera...</ThemedText>
+      </ThemedView>
+    );
+  }
 
-	if (phase === 'finished') {
-		const pace = distance > 0 ? ((time / 60) / distance).toFixed(2) : '0.00';
-		return (
-			<ThemedView style={styles.container}>
-				<ThemedText type="title">Run Complete!</ThemedText>
-				<View style={styles.row}>
-					<ThemedText type="defaultSemiBold">Time: {formatTime(time)}</ThemedText>
-					<ThemedText type="defaultSemiBold">Distance: {distance.toFixed(2)} km</ThemedText>
-					<ThemedText type="defaultSemiBold">Avg Pace: {pace} min/km</ThemedText>
-				</View>
-				<Pressable style={styles.primaryBtn} onPress={() => { setPhase('scan'); setTime(0); setDistance(0); setStamina(100); }}>
-					<ThemedText type="defaultSemiBold">Start New Run</ThemedText>
-				</Pressable>
-			</ThemedView>
-		);
-	}
+  if (!permission.granted) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.permissionContainer}>
+          <ThemedText type="subtitle">Camera Permission Required</ThemedText>
+          <ThemedText type="default">
+            We need camera access to perform your body scan before running.
+          </ThemedText>
+          <Pressable style={styles.permissionButton} onPress={requestPermission}>
+            <ThemedText type="defaultSemiBold">Grant Camera Permission</ThemedText>
+          </Pressable>
+        </View>
+      </ThemedView>
+    );
+  }
 
-	const pace = distance > 0 ? ((time / 60) / distance).toFixed(2) : '0.00';
+  function toggleCameraFacing() {
+    setFacing(current => (current === 'back' ? 'front' : 'back'));
+  }
 
-	return (
-		<ThemedView style={styles.container}>
-			<View style={styles.row}>
-				<ThemedText type="defaultSemiBold">Time: {formatTime(time)}</ThemedText>
-				<ThemedText type="defaultSemiBold">Distance: {distance.toFixed(2)} km</ThemedText>
-				<ThemedText type="defaultSemiBold">Current Pace: {pace} min/km</ThemedText>
-			</View>
-			<View style={styles.staminaBox}>
-				<ThemedText type="default">Stamina: {stamina.toFixed(0)}%</ThemedText>
-			</View>
-			<Pressable style={[styles.primaryBtn, { backgroundColor: '#ef4444' }]} onPress={() => setPhase('finished')}>
-				<ThemedText type="defaultSemiBold">End Run</ThemedText>
-			</Pressable>
-		</ThemedView>
-	);
+  return (
+    <View style={styles.container}>
+      <CameraView 
+        ref={cameraRef}
+        style={styles.camera} 
+        facing={facing}
+        mode="video"
+      >
+        <View style={styles.overlay}>
+          <View style={styles.header}>
+            <Pressable style={styles.closeButton} onPress={() => router.back()}>
+              <X size={24} color="white" />
+            </Pressable>
+            <View style={styles.scanInfo}>
+              <Text style={styles.scanText}>AI Body Scan</Text>
+              {isRecording && (
+                <Text style={styles.recordingText}>
+                  ● REC {formatRecordingTime(recordingTime)}
+                </Text>
+              )}
+            </View>
+            <Pressable style={styles.flipButton} onPress={toggleCameraFacing}>
+              <RotateCcw size={24} color="white" />
+            </Pressable>
+          </View>
+
+          <View style={styles.scanFrame}>
+            <View style={styles.corner} />
+            <View style={[styles.corner, styles.topRight]} />
+            <View style={[styles.corner, styles.bottomLeft]} />
+            <View style={[styles.corner, styles.bottomRight]} />
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.instructionText}>
+              Stand in the frame for body analysis
+            </Text>
+            {isRecording ? (
+              <Pressable style={styles.stopButton} onPress={stopRecording}>
+                <Text style={styles.buttonText}>Stop Scan</Text>
+              </Pressable>
+            ) : (
+              <Pressable style={styles.startButton} onPress={startRecording}>
+                <Text style={styles.buttonText}>Start Scan</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </CameraView>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		padding: 16,
-		gap: 12,
-	},
-	center: {
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	row: {
-		gap: 8,
-	},
-	scanBox: {
-		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
-		gap: 12,
-		borderRadius: 12,
-		borderWidth: 2,
-		borderColor: 'rgba(127,127,127,0.3)',
-		borderStyle: 'dashed',
-		backgroundColor: 'rgba(127,127,127,0.08)',
-		padding: 16,
-	},
-	staminaBox: {
-		padding: 12,
-		borderRadius: 8,
-		backgroundColor: 'rgba(127,127,127,0.08)',
-	},
-	primaryBtn: {
-		marginTop: 8,
-		alignSelf: 'center',
-		paddingVertical: 10,
-		paddingHorizontal: 16,
-		borderRadius: 8,
-		backgroundColor: '#3B82F6',
-	},
+  container: {
+    flex: 1,
+    backgroundColor: 'black',
+  },
+  camera: {
+    flex: 1,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  closeButton: {
+    padding: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+  },
+  scanInfo: {
+    alignItems: 'center',
+  },
+  scanText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  recordingText: {
+    color: '#ef4444',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  flipButton: {
+    padding: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+  },
+  scanFrame: {
+    flex: 1,
+    marginHorizontal: 40,
+    marginVertical: 60,
+    position: 'relative',
+  },
+  corner: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderColor: '#3B82F6',
+    borderWidth: 3,
+    top: 0,
+    left: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+  },
+  topRight: {
+    top: 0,
+    right: 0,
+    left: 'auto',
+    borderLeftWidth: 0,
+    borderRightWidth: 3,
+    borderBottomWidth: 0,
+  },
+  bottomLeft: {
+    bottom: 0,
+    top: 'auto',
+    left: 0,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+    borderBottomWidth: 3,
+  },
+  bottomRight: {
+    bottom: 0,
+    right: 0,
+    top: 'auto',
+    left: 'auto',
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+  },
+  footer: {
+    alignItems: 'center',
+    paddingBottom: 50,
+    paddingHorizontal: 20,
+  },
+  instructionText: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  startButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 40,
+    paddingVertical: 15,
+    borderRadius: 25,
+  },
+  stopButton: {
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 40,
+    paddingVertical: 15,
+    borderRadius: 25,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  permissionContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    gap: 16,
+  },
+  permissionButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
 });
-
-
