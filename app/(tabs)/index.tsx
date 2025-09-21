@@ -112,6 +112,8 @@ function ActivityCard({ name, description, imageId }: { name: ActivityType; desc
 				'Sit-ups': '/activities/sit-ups',
 				'Push-ups': '/activities/push-ups',
 				'High Jump': '/activities/high-jump',
+				'Shuttle Run': '/activities/shuttle-run',
+				'Endurance Run': '/activities/endurance-run',
 			};
 			router.push(map[name] as any);
 		}}>

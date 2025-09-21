@@ -28,7 +28,7 @@ export default function RootLayout() {
           <Stack.Screen name="leaderboard" options={{ headerShown: false }} />
           <Stack.Screen name="profile" options={{ headerShown: false }} />
 
-          {/* login / signup as standalone stack screens */}
+          {/*  / signup as standalone stack screens */}
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="signup" options={{ headerShown: false }} />
 

@@ -26,6 +26,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
+    console.log("Signup button clicked");  // 👈 add this
     if (!fullname || !email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill all fields");
       return;
@@ -45,11 +46,12 @@ export default function SignupPage() {
 
     try {
       // Replace with your backend URL
-      const res = await fetch("http://localhost:5000/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullname, email, password }),
-      });
+    const res = await fetch("http://192.168.43.130:3002/api/auth/signup", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ fullname, email, password }),
+});
+
 
       if (!res.ok) {
         const data = await res.json();
