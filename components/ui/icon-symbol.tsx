@@ -20,6 +20,11 @@ const MAPPING = {
   'chevron.right': 'chevron-right',
   'person.crop.circle': 'person',
   'line.3.horizontal': 'menu',
+  'flame.fill': 'whatshot',   // 🔥 fire icon
+  'trophy.fill': 'emoji-events', // 🏆 trophy icon
+  'person.crop.circle.badge.plus' : 'person-add', // ➕ person with plus icon
+  'arrow.right.square.fill': 'login', // 🔑 login icon
+  
 } as IconMapping;
 
 /**

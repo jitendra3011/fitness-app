@@ -21,13 +21,21 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Sidebar.Provider>
         <Stack>
+          {/* bottom tab screens */}
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="activities" options={{ headerShown: false }} />
           <Stack.Screen name="explore" options={{ headerShown: false }} />
           <Stack.Screen name="leaderboard" options={{ headerShown: false }} />
           <Stack.Screen name="profile" options={{ headerShown: false }} />
+
+          {/* login / signup as standalone stack screens */}
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="signup" options={{ headerShown: false }} />
+
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
+
+        {/* sidebar */}
         <Sidebar.Content>
           <View style={styles.sidebarHeader}>
             <View style={styles.logoContainer}>
@@ -37,6 +45,7 @@ export default function RootLayout() {
           </View>
           <SidebarLinks />
         </Sidebar.Content>
+
         <StatusBar style="auto" />
       </Sidebar.Provider>
     </ThemeProvider>
@@ -48,11 +57,11 @@ function SidebarLinks() {
   return (
     <View style={styles.navigationList}>
       <Pressable style={styles.navItem} onPress={() => { router.push('/(tabs)'); close(); }}>
-        <IconSymbol size={20} name="chart.bar.fill" color="#3B82F6" />
+        <IconSymbol size={20} name="house.fill" color="#9CA3AF" />
         <ThemedText type="defaultSemiBold" style={styles.navText}>Dashboard</ThemedText>
       </Pressable>
       <Pressable style={styles.navItem} onPress={() => { router.push('/(tabs)/activities'); close(); }}>
-        <IconSymbol size={20} name="chart.line.uptrend.xyaxis" color="#9CA3AF" />
+        <IconSymbol size={20} name="flame.fill" color="#9CA3AF" />
         <ThemedText type="defaultSemiBold" style={styles.navText}>Activities</ThemedText>
       </Pressable>
       <Pressable style={styles.navItem} onPress={() => { router.push('/leaderboard'); close(); }}>
@@ -60,15 +69,16 @@ function SidebarLinks() {
         <ThemedText type="defaultSemiBold" style={styles.navText}>Leaderboard</ThemedText>
       </Pressable>
       <Pressable style={styles.navItem} onPress={() => { router.push('/profile'); close(); }}>
-        <IconSymbol size={20} name="person.fill" color="#9CA3AF" />
+        <IconSymbol size={20} name="person.crop.circle" color="#9CA3AF" />
         <ThemedText type="defaultSemiBold" style={styles.navText}>Profile</ThemedText>
       </Pressable>
+      {/* ✅ keep login & signup in sidebar only */}
       <Pressable style={styles.navItem} onPress={() => { router.push('/signup'); close(); }}>
-        <IconSymbol size={20} name="person.fill" color="#9CA3AF" />
+        <IconSymbol size={20} name="person.crop.circle.badge.plus" color="#9CA3AF" />
         <ThemedText type="defaultSemiBold" style={styles.navText}>Sign Up</ThemedText>
       </Pressable>
       <Pressable style={styles.navItem} onPress={() => { router.push('/login'); close(); }}>
-        <IconSymbol size={20} name="person.fill" color="#9CA3AF" />
+        <IconSymbol size={20} name="arrow.right.square.fill" color="#9CA3AF" />
         <ThemedText type="defaultSemiBold" style={styles.navText}>Login</ThemedText>
       </Pressable>
     </View>
