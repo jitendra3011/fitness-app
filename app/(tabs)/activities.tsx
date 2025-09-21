@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -20,15 +20,17 @@ const activities: { name: ActivityType; href: string; description: string; image
 export default function ActivitiesTab() {
 	return (
 		<ThemedView style={styles.container}>
-			<View>
-				<ThemedText type="title">Choose Your Arena</ThemedText>
-				<ThemedText type="default">Select an activity below to start a new session and track your performance.</ThemedText>
-			</View>
-			<View style={styles.grid}>
-				{activities.map((a) => (
-					<ActivityCard key={a.name} name={a.name} description={a.description} imageId={a.imageId} href={a.href} />
-				))}
-			</View>
+			<ScrollView contentContainerStyle={styles.scrollContent}>
+				<View>
+					<ThemedText type="title">Choose Your Arena</ThemedText>
+					<ThemedText type="default">Select an activity below to start a new session and track your performance.</ThemedText>
+				</View>
+				<View style={styles.grid}>
+					{activities.map((a) => (
+						<ActivityCard key={a.name} name={a.name} description={a.description} imageId={a.imageId} href={a.href} />
+					))}
+				</View>
+			</ScrollView>
 		</ThemedView>
 	);
 }
@@ -51,8 +53,13 @@ function ActivityCard({ name, description, imageId, href }: { name: ActivityType
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		padding: 16,
+		padding: 20,
+	    gap: 16,
+		paddingBottom: 32,
+	},
+	scrollContent: {
 		gap: 16,
+		paddingBottom: 40, // ensures space at the bottom
 	},
 	grid: {
 		flexDirection: 'row',
