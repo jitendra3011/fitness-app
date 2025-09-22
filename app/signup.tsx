@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import {
@@ -26,7 +24,6 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
-    console.log("Signup button clicked");  // 👈 add this
     if (!fullname || !email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill all fields");
       return;
@@ -44,51 +41,12 @@ export default function SignupPage() {
 
     setLoading(true);
 
-    const BASE_URL = "http://192.168.43.125:3002";
-
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullname, email, password }),
-      });
-// read response as text first
-  const text = await res.text();
-
-      let data;
-      try {
-        data = JSON.parse(text);// try parse JSON
-       } catch {
-    data = { message: text }; // fallback to raw text
-  }
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to create account");
-      }
-
-      // try {
-      //   // Replace with your backend URL
-      //   // const res = await fetch("http://192.168.43.125:3002/api/auth/signup", {
-      //   const BASE_URL = "https://rare-plants-stick.loca.lt";
-
-      //   const res = await fetch(`${BASE_URL}/api/auth/signup`, {
-      //     method: "POST",
-      //     headers: { "Content-Type": "application/json" },
-      //     body: JSON.stringify({ fullname, email, password }),
-      //   });
-
-
-      //   if (!res.ok) {
-      //     const data = await res.json();
-      //     throw new Error(data.message || "Failed to create account");
-      //   }
-
-      Alert.alert("Success", "Account created!");
-      router.push("/login"); // Redirect to login page after signup
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "Something went wrong");
-    } finally {
+    // Simulate account creation (frontend-only)
+    setTimeout(() => {
       setLoading(false);
-    }
+      Alert.alert("Success", "Account created successfully!");
+      router.push("/login");
+    }, 1000);
   };
 
   return (

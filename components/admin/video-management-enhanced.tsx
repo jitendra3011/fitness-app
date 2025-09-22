@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Brain, Play, User, Calendar, Award } from 'lucide-react';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 
 interface AthleteVideo {
   id: string;
@@ -96,7 +96,7 @@ export function VideoManagementEnhanced() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Play className="h-5 w-5" />
+            <Ionicons name="play" size={20} />
             Training Videos
           </CardTitle>
         </CardHeader>
@@ -118,7 +118,7 @@ export function VideoManagementEnhanced() {
                       />
                       <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
                         <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
-                          <Play className="h-4 w-4 text-white ml-1" fill="white" />
+                          <Ionicons name="play" size={16} color="white" />
                         </div>
                       </div>
                     </div>
@@ -127,15 +127,15 @@ export function VideoManagementEnhanced() {
                   <div className="flex-1 space-y-3">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
+                        <Ionicons name="person" size={16} />
                         <span className="font-semibold">{video.athleteName}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Award className="h-4 w-4" />
+                        <MaterialIcons name="sports" size={16} />
                         <span>{video.category}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
+                        <Ionicons name="calendar" size={16} />
                         <span className="text-sm text-gray-500">{video.uploadDate}</span>
                       </div>
                       {video.analyzed && (
@@ -151,7 +151,7 @@ export function VideoManagementEnhanced() {
                       disabled={analyzing === video.id || video.analyzed}
                       className="w-full"
                     >
-                      <Brain className="h-4 w-4 mr-1" />
+                      <MaterialIcons name="psychology" size={16} style={{marginRight: 4}} />
                       {analyzing === video.id ? 'Analyzing...' : video.analyzed ? 'Re-analyze' : 'Analyze'}
                     </Button>
                     

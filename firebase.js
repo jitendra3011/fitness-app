@@ -4,7 +4,7 @@ import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: "AIzaSyA1IIRVcXyeWhDTZaEzg8wYd8tfi8kdKaU",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    authDomain: "fitness-app-7ecc8.firebaseapp.com",
     projectId: "fitness-app-7ecc8",
     storageBucket: "fitness-app-7ecc8.firebasestorage.app",
     messagingSenderId: "1085549129411",

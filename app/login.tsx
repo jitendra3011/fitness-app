@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import {
@@ -12,12 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Image,
 } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,38 +27,14 @@ export default function LoginPage() {
   }
 
   setLoading(true);
-  try {
-    const res = await fetch("http://192.168.43.130:3002/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) throw new Error(data.message || "Login failed");
-
-    // ✅ Store logged-in user in AsyncStorage
-    await AsyncStorage.setItem('user', JSON.stringify(data.user));
-
+  
+  // Simulate login (frontend-only)
+  setTimeout(() => {
+    setLoading(false);
     Alert.alert("Success", "Logged in successfully!");
     router.push("/(tabs)");
-  } catch (err: any) {
-    Alert.alert("Error", err.message || "Something went wrong");
-  } finally {
-    setLoading(false);
-  }
+  }, 1000);
 };
-
-useEffect(() => {
-  AsyncStorage.getItem('user').then(userStr => {
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      setEmail(user.email);
-      router.push("/(tabs)"); // auto-login if user exists
-    }
-  });
-}, []);
 
 
   return (
