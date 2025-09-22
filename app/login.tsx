@@ -23,24 +23,32 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please fill all fields");
-      return;
-    }
+ const handleLogin = async () => {
+  if (!email || !password) {
+    Alert.alert("Error", "Please fill all fields");
+    return;
+  }
 
-    setLoading(true);
+  setLoading(true);
+  try {
+    const res = await fetch("http://192.168.43.130:3002/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-    setTimeout(() => {
-      setLoading(false);
-      if (email === "test@test.com" && password === "123456") {
-        Alert.alert("Success", "Logged in successfully!");
-        router.push("/activities");
-      } else {
-        Alert.alert("Error", "Invalid credentials");
-      }
-    }, 1500);
-  };
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.message || "Login failed");
+
+    Alert.alert("Success", "Logged in successfully!");
+    router.push("/(tabs)");
+  } catch (err: any) {
+    Alert.alert("Error", err.message || "Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <ThemedView style={styles.container}>
