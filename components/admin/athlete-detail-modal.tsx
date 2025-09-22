@@ -2,7 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, Pressable, Modal, Image, TextInput } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, Modal, Image, TextInput, Alert, Linking } from 'react-native';
 
 interface Athlete {
   id: string;
@@ -56,6 +56,10 @@ export default function AthleteDetailModal({
   onFlag 
 }: AthleteDetailModalProps) {
   const [editingPhoto, setEditingPhoto] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [videoModalVisible, setVideoModalVisible] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
 
   if (!athlete) return null;
 
@@ -77,6 +81,79 @@ export default function AthleteDetailModal({
       case 'pushUps': return 'figure.strengthtraining.traditional';
       default: return 'play.circle.fill';
     }
+  };
+
+  const getVideoUrl = (testType: string) => {
+    const videoUrls = {
+      'verticalJump': 'https://www.youtube.com/shorts/XISPZl71aIQ',
+      'shuttleRun': 'https://www.youtube.com/shorts/7Ijyh8uxyZw',
+      'sitUps': 'https://www.youtube.com/watch?v=LYIkwwY-u9o',
+      'enduranceRun': 'https://www.youtube.com/watch?v=I8vns1znpBM',
+      'pushUps': 'https://www.youtube.com/watch?v=IODxDxX7oi4'
+    };
+    return videoUrls[testType] || 'https://www.youtube.com/watch?v=QwT9D74dQcw';
+  };
+
+  const handleViewVideo = (testType: string) => {
+    const videoUrl = getVideoUrl(testType);
+    Linking.openURL(videoUrl).catch(() => {
+      Alert.alert('Error', 'Could not open video. Please try again.');
+    });
+  };
+
+  const handleApprove = () => {
+    Alert.alert(
+      'Approve Athlete',
+      'Are you sure you want to approve this athlete submission?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Approve',
+          onPress: () => {
+            onApprove(athlete.id);
+            Alert.alert('Success', 'Athlete has been approved and notified.');
+          }
+        }
+      ]
+    );
+  };
+
+  const handleReject = () => {
+    setShowRejectModal(true);
+  };
+
+  const confirmReject = () => {
+    if (!rejectionReason.trim()) {
+      Alert.alert('Error', 'Please provide a reason for rejection.');
+      return;
+    }
+    onReject(athlete.id);
+    setShowRejectModal(false);
+    setRejectionReason('');
+    Alert.alert('Success', 'Athlete has been rejected and notified with the reason.');
+  };
+
+  const handleFlag = () => {
+    Alert.alert(
+      'Flag for Review',
+      'This will flag the athlete for manual review by another admin.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Flag',
+          onPress: () => {
+            onFlag(athlete.id);
+            Alert.alert('Success', 'Athlete has been flagged for review.');
+          }
+        }
+      ]
+    );
+  };
+
+  const getAIRecommendation = (score: number) => {
+    if (score >= 80) return { text: 'Recommend: Approve', color: '#10B981' };
+    if (score >= 50) return { text: 'Recommend: Flag for Review', color: '#F59E0B' };
+    return { text: 'Recommend: Reject', color: '#EF4444' };
   };
 
   return (
@@ -190,7 +267,10 @@ export default function AthleteDetailModal({
                     {testData.count && <ThemedText style={styles.testValue}>Count: {testData.count}</ThemedText>}
                     {testData.distance && <ThemedText style={styles.testValue}>Distance: {testData.distance}m</ThemedText>}
                   </View>
-                  <Pressable style={styles.videoButton}>
+                  <Pressable 
+                    style={styles.videoButton}
+                    onPress={() => handleViewVideo(testType)}
+                  >
                     <IconSymbol size={14} name="play.circle.fill" color="#8B5CF6" />
                     <ThemedText style={styles.videoText}>View Video</ThemedText>
                   </Pressable>
@@ -244,6 +324,11 @@ export default function AthleteDetailModal({
                   <ThemedText type="title" style={[styles.aiScoreValue, { color: getStatusColor(athlete.status) }]}>
                     {athlete.aiScore}%
                   </ThemedText>
+                  <View style={[styles.recommendationBadge, { backgroundColor: getAIRecommendation(athlete.aiScore).color + '20' }]}>
+                    <ThemedText style={[styles.recommendationText, { color: getAIRecommendation(athlete.aiScore).color }]}>
+                      {getAIRecommendation(athlete.aiScore).text}
+                    </ThemedText>
+                  </View>
                 </View>
               )}
             </View>
@@ -255,32 +340,71 @@ export default function AthleteDetailModal({
               <View style={styles.actionButtons}>
                 <Pressable 
                   style={[styles.actionBtn, styles.approveBtn]}
-                  onPress={() => onApprove(athlete.id)}
+                  onPress={handleApprove}
                 >
                   <IconSymbol size={20} name="checkmark.circle.fill" color="#FFFFFF" />
-                  <ThemedText style={styles.actionBtnText}>Approve</ThemedText>
+                  <ThemedText style={styles.actionBtnText}>✅ Approve</ThemedText>
                 </Pressable>
                 
                 <Pressable 
                   style={[styles.actionBtn, styles.rejectBtn]}
-                  onPress={() => onReject(athlete.id)}
+                  onPress={handleReject}
                 >
                   <IconSymbol size={20} name="xmark.circle.fill" color="#FFFFFF" />
-                  <ThemedText style={styles.actionBtnText}>Reject</ThemedText>
+                  <ThemedText style={styles.actionBtnText}>❌ Reject</ThemedText>
                 </Pressable>
               </View>
             )}
             
             <Pressable 
               style={[styles.actionBtn, styles.flagBtn]}
-              onPress={() => onFlag(athlete.id)}
+              onPress={handleFlag}
             >
               <IconSymbol size={20} name="flag.fill" color="#FFFFFF" />
-              <ThemedText style={styles.actionBtnText}>Flag for Review</ThemedText>
+              <ThemedText style={styles.actionBtnText}>⚠️ Flag for Review</ThemedText>
             </Pressable>
           </View>
         </ScrollView>
       </ThemedView>
+
+      {/* Rejection Reason Modal */}
+      <Modal visible={showRejectModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.rejectModal}>
+            <ThemedText type="subtitle" style={styles.rejectTitle}>Rejection Reason</ThemedText>
+            <ThemedText style={styles.rejectSubtitle}>Please provide a reason for rejecting this athlete:</ThemedText>
+            
+            <TextInput
+              style={styles.reasonInput}
+              placeholder="Enter rejection reason..."
+              value={rejectionReason}
+              onChangeText={setRejectionReason}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+            
+            <View style={styles.rejectActions}>
+              <Pressable 
+                style={[styles.rejectActionBtn, styles.cancelBtn]}
+                onPress={() => {
+                  setShowRejectModal(false);
+                  setRejectionReason('');
+                }}
+              >
+                <ThemedText style={styles.cancelBtnText}>Cancel</ThemedText>
+              </Pressable>
+              
+              <Pressable 
+                style={[styles.rejectActionBtn, styles.confirmRejectBtn]}
+                onPress={confirmReject}
+              >
+                <ThemedText style={styles.confirmRejectBtnText}>Reject</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -555,5 +679,75 @@ const styles = StyleSheet.create({
   },
   flagBtn: {
     backgroundColor: '#F59E0B',
+  },
+  recommendationBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  recommendationText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  rejectModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  rejectTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  rejectSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 16,
+  },
+  reasonInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    minHeight: 100,
+    marginBottom: 20,
+  },
+  rejectActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  rejectActionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelBtn: {
+    backgroundColor: '#F3F4F6',
+  },
+  cancelBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  confirmRejectBtn: {
+    backgroundColor: '#EF4444',
+  },
+  confirmRejectBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

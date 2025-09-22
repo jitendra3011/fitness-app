@@ -36,7 +36,7 @@ export function ProfileForm() {
   const [profilePreview, setProfilePreview] = useState<string>('');
   const [demoVideos, setDemoVideos] = useState<any[]>([]);
 
-  const { control, handleSubmit, watch, setValue, getValues } = useForm<ProfileValues>({
+  const { control, handleSubmit, watch, setValue, getValues, formState: { errors, isSubmitting } } = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       fullName: '',
@@ -113,6 +113,8 @@ if (!result.canceled) {
 
   const onSubmit = async (values: ProfileValues) => {
     try {
+      console.log('Form values:', values);
+      
       const userStr = await AsyncStorage.getItem('user');
       if (!userStr) {
         Alert.alert('Error', 'User not logged in');
@@ -121,6 +123,8 @@ if (!result.canceled) {
       const user = JSON.parse(userStr);
 
       const formData = { userId: user.id, ...values };
+      console.log('Sending data:', formData);
+      
       const res = await fetch('http://192.168.43.130:3002/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,12 +132,14 @@ if (!result.canceled) {
       });
 
       const data = await res.json();
+      console.log('Response:', data);
+      
       if (!res.ok) throw new Error(data.message || 'Failed to save profile');
 
       Alert.alert('Success', 'Profile saved successfully!');
       router.push('/(tabs)');
     } catch (err: any) {
-      console.error(err);
+      console.error('Submit error:', err);
       Alert.alert('Error', err.message || 'Something went wrong');
     }
   };
@@ -159,6 +165,7 @@ if (!result.canceled) {
         <View style={styles.field}>
           <Text style={styles.label}>Full Name *</Text>
           <TextInput style={styles.input} placeholder="Enter your full name" value={field.value} onChangeText={field.onChange} />
+          {errors.fullName && <Text style={styles.error}>{errors.fullName.message}</Text>}
         </View>
       )} />
       <Controller control={control} name="dateOfBirth" render={({ field }) => (
@@ -274,8 +281,12 @@ if (!result.canceled) {
         <TouchableOpacity style={[styles.button, styles.outlineButton]} onPress={saveDraft}>
           <Text style={styles.buttonText}>Save Draft</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
-          <Text style={styles.buttonText}>Submit Profile</Text>
+        <TouchableOpacity 
+          style={[styles.button, isSubmitting && styles.buttonDisabled]} 
+          onPress={handleSubmit(onSubmit)}
+          disabled={isSubmitting}
+        >
+          <Text style={styles.buttonText}>{isSubmitting ? 'Submitting...' : 'Submit Profile'}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -296,6 +307,8 @@ const styles = StyleSheet.create({
   buttonText: { color: '#fff', fontWeight: 'bold' },
   buttonRow: { flexDirection: 'row', justifyContent: 'space-between' },
   picker: { borderWidth: Platform.OS === 'android' ? 1 : 0, borderColor: '#ccc', borderRadius: 8 },
+  error: { color: '#ff0000', fontSize: 12, marginTop: 4 },
+  buttonDisabled: { backgroundColor: '#ccc' },
 });
 
 

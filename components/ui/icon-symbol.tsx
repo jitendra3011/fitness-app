@@ -24,6 +24,19 @@ const MAPPING = {
   'trophy.fill': 'emoji-events', // 🏆 trophy icon
   'person.crop.circle.badge.plus' : 'person-add', // ➕ person with plus icon
   'arrow.right.square.fill': 'login', // 🔑 login icon
+  'figure.run': 'directions-run',
+  'arrow.left.arrow.right': 'swap-horiz',
+  'figure.jumprope': 'fitness-center',
+  'figure.highintensity.intervaltraining': 'trending-up',
+  'figure.run.circle': 'track-changes',
+  'figure.core.training': 'accessibility',
+  'play.rectangle.fill': 'play-arrow',
+  'camera.fill': 'camera-alt',
+  'video.fill': 'videocam',
+  'shield.fill': 'security',
+  'play.circle.fill': 'play-circle-filled',
+  'play.fill': 'play-arrow',
+  'checkmark.circle.fill': 'check-circle',
   
 } as IconMapping;
 
@@ -38,11 +51,11 @@ export function IconSymbol({
   color,
   style,
 }: {
-  name: IconSymbolName;
+  name: string;
   size?: number;
   color: string | OpaqueColorValue;
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  return <MaterialIcons color={color} size={size} name={MAPPING[name as keyof typeof MAPPING] || 'help'} style={style} />;
 }
