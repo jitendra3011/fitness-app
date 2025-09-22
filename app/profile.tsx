@@ -53,13 +53,33 @@ export default function ProfileScreen() {
   const [bodyScanVideo, setBodyScanVideo] = useState<VideoData | null>(null);
   const [activityReports, setActivityReports] = useState<VideoData[]>([]);
 
-  // Load body scan video data when screen focuses
+  // Load profile and video data when screen focuses
   useFocusEffect(
     useCallback(() => {
+      loadProfileData();
       loadBodyScanVideo();
       loadActivityReports();
     }, [])
   );
+
+  const loadProfileData = async () => {
+    try {
+      const profileDataString = await AsyncStorage.getItem('user_profile');
+      if (profileDataString) {
+        const profileData = JSON.parse(profileDataString);
+        setWeight(profileData.weight || '');
+        setHeight(profileData.height || '');
+        setAge(profileData.age || '');
+        setGender(profileData.gender || '');
+        setCity(profileData.city || '');
+        setRegionState(profileData.regionState || '');
+        setVillage(profileData.village || '');
+        setPhotoUri(profileData.photoUri || null);
+      }
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+    }
+  };
 
   const loadBodyScanVideo = async () => {
     try {
@@ -225,7 +245,9 @@ export default function ProfileScreen() {
     return village.trim() ? '' : 'Village is required.';
   }, [village, villageTouched]);
 
-  const onSave = useCallback(() => {
+  const onSave = useCallback(async () => {
+    console.log('Save button pressed');
+    
     setWeightTouched(true);
     setHeightTouched(true);
     setAgeTouched(true);
@@ -234,7 +256,7 @@ export default function ProfileScreen() {
     setRegionStateTouched(true);
     setVillageTouched(true);
 
-    const hasError = [
+    const errors = {
       weightError,
       heightError,
       ageError,
@@ -242,10 +264,47 @@ export default function ProfileScreen() {
       cityError,
       regionStateError,
       villageError,
-    ].some((e) => !!e);
-    if (hasError) return;
-    Alert.alert('Saved', 'Your changes have been saved.');
+    };
+    
+    console.log('Validation errors:', errors);
+    
+    const hasError = Object.values(errors).some((e) => !!e);
+    if (hasError) {
+      console.log('Validation failed, not saving');
+      Alert.alert('Validation Error', 'Please fill in all required fields correctly.');
+      return;
+    }
+
+    try {
+      const profileData = {
+        weight,
+        height,
+        age,
+        gender,
+        city,
+        regionState,
+        village,
+        photoUri,
+        updatedAt: new Date().toISOString()
+      };
+      
+      console.log('Saving profile data:', profileData);
+      await AsyncStorage.setItem('user_profile', JSON.stringify(profileData));
+      console.log('Profile saved successfully');
+      Alert.alert('Success', 'Your profile has been saved successfully!');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', 'Failed to save profile. Please try again.');
+    }
   }, [
+    weight,
+    height,
+    age,
+    gender,
+    city,
+    regionState,
+    village,
+    photoUri,
     weightError,
     heightError,
     ageError,
