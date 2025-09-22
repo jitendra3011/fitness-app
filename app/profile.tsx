@@ -20,7 +20,9 @@ type VideoData = {
   timestamp: string;
   duration: number;
   type: string;
+  activity?: string;
   uri: string;
+  status?: string;
 };
 
 export default function ProfileScreen() {
@@ -49,11 +51,13 @@ export default function ProfileScreen() {
   const [village, setVillage] = useState<string>('');
   const [villageTouched, setVillageTouched] = useState<boolean>(false);
   const [bodyScanVideo, setBodyScanVideo] = useState<VideoData | null>(null);
+  const [activityReports, setActivityReports] = useState<VideoData[]>([]);
 
   // Load body scan video data when screen focuses
   useFocusEffect(
     useCallback(() => {
       loadBodyScanVideo();
+      loadActivityReports();
     }, [])
   );
 
@@ -71,6 +75,47 @@ export default function ProfileScreen() {
       console.error('Error loading body scan video:', error);
       setBodyScanVideo(null);
     }
+  };
+
+  const loadActivityReports = async () => {
+    try {
+      const reportsString = await AsyncStorage.getItem('activity_reports');
+      if (reportsString) {
+        const reports: VideoData[] = JSON.parse(reportsString);
+        setActivityReports(reports.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+      } else {
+        setActivityReports([]);
+      }
+    } catch (error) {
+      console.error('Error loading activity reports:', error);
+      setActivityReports([]);
+    }
+  };
+
+  const deleteActivityReport = async (reportId: string) => {
+    Alert.alert(
+      'Delete Activity Report',
+      'Are you sure you want to delete this activity report?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const updatedReports = activityReports.filter(report => report.id !== reportId);
+              await AsyncStorage.setItem('activity_reports', JSON.stringify(updatedReports));
+              await AsyncStorage.removeItem(`activity_video_${reportId}`);
+              setActivityReports(updatedReports);
+              Alert.alert('Success', 'Activity report has been deleted.');
+            } catch (error) {
+              console.error('Error deleting activity report:', error);
+              Alert.alert('Error', 'Failed to delete activity report.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const deleteBodyScanVideo = async () => {
@@ -221,6 +266,52 @@ export default function ProfileScreen() {
             Complete your profile to get personalized analysis.
           </ThemedText>
         </View>
+
+        {/* Activity Reports Section */}
+        {activityReports.length > 0 && (
+          <View style={styles.sectionCard}>
+            <View style={styles.videoSectionHeader}>
+              <VideoIcon size={20} color="#10B981" />
+              <ThemedText type="defaultSemiBold">Activity Reports ({activityReports.length})</ThemedText>
+            </View>
+            
+            {activityReports.map((report) => (
+              <View key={report.id} style={styles.reportCard}>
+                <View style={styles.reportHeader}>
+                  <View>
+                    <ThemedText type="defaultSemiBold">{report.activity || report.type}</ThemedText>
+                    <ThemedText style={styles.reportDate}>
+                      {formatDate(report.timestamp)}
+                    </ThemedText>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: '#10B981' }]}>
+                    <ThemedText style={styles.statusText}>Completed</ThemedText>
+                  </View>
+                </View>
+                
+                <View style={styles.reportStats}>
+                  <View style={styles.statItem}>
+                    <ThemedText style={styles.statLabel}>Duration</ThemedText>
+                    <ThemedText style={styles.statValue}>{formatDuration(report.duration)}</ThemedText>
+                  </View>
+                  <View style={styles.statItem}>
+                    <ThemedText style={styles.statLabel}>Type</ThemedText>
+                    <ThemedText style={styles.statValue}>{report.type}</ThemedText>
+                  </View>
+                </View>
+                
+                <Pressable 
+                  style={styles.deleteButton} 
+                  onPress={() => deleteActivityReport(report.id)} 
+                  hitSlop={8}
+                >
+                  <Trash2 size={16} color="#ef4444" />
+                  <ThemedText style={styles.deleteButtonText}>Delete Report</ThemedText>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Body Scan Video Section */}
         {bodyScanVideo && (
@@ -543,5 +634,50 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: '#ef4444',
     fontSize: 12,
+  },
+  reportCard: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(127,127,127,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(127,127,127,0.15)',
+  },
+  reportHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  reportDate: {
+    fontSize: 12,
+    opacity: 0.7,
+    marginTop: 2,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  reportStats: {
+    flexDirection: 'row',
+    gap: 24,
+    marginBottom: 12,
+  },
+  statItem: {
+    flex: 1,
+  },
+  statLabel: {
+    fontSize: 12,
+    opacity: 0.7,
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
