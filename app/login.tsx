@@ -16,6 +16,8 @@ import {
 } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,6 +43,9 @@ export default function LoginPage() {
 
     if (!res.ok) throw new Error(data.message || "Login failed");
 
+    // ✅ Store logged-in user in AsyncStorage
+    await AsyncStorage.setItem('user', JSON.stringify(data.user));
+
     Alert.alert("Success", "Logged in successfully!");
     router.push("/(tabs)");
   } catch (err: any) {
@@ -49,6 +54,17 @@ export default function LoginPage() {
     setLoading(false);
   }
 };
+
+useEffect(() => {
+  AsyncStorage.getItem('user').then(userStr => {
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setEmail(user.email);
+      router.push("/(tabs)"); // auto-login if user exists
+    }
+  });
+}, []);
+
 
   return (
     <ThemedView style={styles.container}>

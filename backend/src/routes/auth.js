@@ -1,6 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
+import Profile from '../models/Profile.js';
 
 const router = express.Router();
 
@@ -42,6 +43,30 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/profile
+router.post('/', async (req, res) => {
+  const { userId, ...profileData } = req.body;
+
+  try {
+    // Check if profile already exists for user
+    let profile = await Profile.findOne({ user: userId });
+
+    if (profile) {
+      // Update existing profile
+      profile = await Profile.findOneAndUpdate({ user: userId }, profileData, { new: true });
+    } else {
+      // Create new profile
+      profile = new Profile({ user: userId, ...profileData });
+      await profile.save();
+    }
+
+    res.status(200).json({ message: 'Profile saved', profile });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
