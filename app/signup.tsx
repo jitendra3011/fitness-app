@@ -44,19 +44,43 @@ export default function SignupPage() {
 
     setLoading(true);
 
+    const BASE_URL = "http://192.168.43.125:3002";
+
     try {
-      // Replace with your backend URL
-    const res = await fetch("http://192.168.43.125:3002/api/auth/signup", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ fullname, email, password }),
-});
+      const res = await fetch(`${BASE_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullname, email, password }),
+      });
+// read response as text first
+  const text = await res.text();
 
-
+      let data;
+      try {
+        data = JSON.parse(text);// try parse JSON
+       } catch {
+    data = { message: text }; // fallback to raw text
+  }
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.message || "Failed to create account");
       }
+
+      // try {
+      //   // Replace with your backend URL
+      //   // const res = await fetch("http://192.168.43.125:3002/api/auth/signup", {
+      //   const BASE_URL = "https://rare-plants-stick.loca.lt";
+
+      //   const res = await fetch(`${BASE_URL}/api/auth/signup`, {
+      //     method: "POST",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify({ fullname, email, password }),
+      //   });
+
+
+      //   if (!res.ok) {
+      //     const data = await res.json();
+      //     throw new Error(data.message || "Failed to create account");
+      //   }
 
       Alert.alert("Success", "Account created!");
       router.push("/login"); // Redirect to login page after signup
