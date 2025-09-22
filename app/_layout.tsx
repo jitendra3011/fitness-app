@@ -11,7 +11,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  initialRouteName: 'index',
 };
 
 export default function RootLayout() {
@@ -31,6 +31,8 @@ export default function RootLayout() {
           {/*  / signup as standalone stack screens */}
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="signup" options={{ headerShown: false }} />
+          <Stack.Screen name="terms-conditions" options={{ headerShown: false }} />
+          <Stack.Screen name="privacy" options={{ headerShown: false }} />
 
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
@@ -80,6 +82,14 @@ function SidebarLinks() {
       <Pressable style={styles.navItem} onPress={() => { router.push('/login'); close(); }}>
         <IconSymbol size={20} name="arrow.right.square.fill" color="#9CA3AF" />
         <ThemedText type="defaultSemiBold" style={styles.navText}>Login</ThemedText>
+      </Pressable>
+      <Pressable style={styles.navItem} onPress={() => { router.push('/privacy'); close(); }}>
+        <IconSymbol size={20} name="doc.text" color="#9CA3AF" />
+        <ThemedText type="defaultSemiBold" style={styles.navText}>Privacy Policy</ThemedText>
+      </Pressable>
+      <Pressable style={styles.navItem} onPress={() => { router.push('/terms-conditions'); close(); }}>
+        <IconSymbol size={20} name="doc.plaintext" color="#9CA3AF" />
+        <ThemedText type="defaultSemiBold" style={styles.navText}>Terms & Conditions</ThemedText>
       </Pressable>
     </View>
   );

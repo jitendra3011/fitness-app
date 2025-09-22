@@ -43,39 +43,53 @@ export default function CameraScreen() {
         onRecordingFinished: async (video: { uri: string }) => {
           console.log('Video recorded:', video?.uri);
 
-          const videoData = {
-            id: Date.now().toString(),
-            timestamp: new Date().toISOString(),
-            duration: recordingTime,
-            type: 'body_scan',
-            uri: video?.uri,
-          };
+          try {
+            const videoData = {
+              id: Date.now().toString(),
+              timestamp: new Date().toISOString(),
+              duration: recordingTime,
+              type: 'push_ups',
+              activity: 'Push-ups',
+              uri: video?.uri,
+              status: 'completed'
+            };
 
-          await AsyncStorage.setItem(
-            'body_scan_video',
-            JSON.stringify(videoData)
-          );
+            // Save individual video
+            await AsyncStorage.setItem(
+              `activity_video_${videoData.id}`,
+              JSON.stringify(videoData)
+            );
 
-          Alert.alert(
-            'Body Scan Complete',
-            'Your body scan has been recorded successfully! The video has been saved to your profile.',
-            [
-              { text: 'Scan Again', style: 'cancel' },
-              {
-                text: 'View Profile',
-                onPress: () => {
-                  router.back();
-                  setTimeout(() => {
-                    router.push('/(tabs)/profile');
-                  }, 100);
+            // Update activity reports
+            const existingReports = await AsyncStorage.getItem('activity_reports');
+            const reports = existingReports ? JSON.parse(existingReports) : [];
+            reports.push(videoData);
+            await AsyncStorage.setItem('activity_reports', JSON.stringify(reports));
+
+            Alert.alert(
+              'Push-ups Session Complete',
+              'Your push-ups session has been recorded and saved to your activity reports!',
+              [
+                { text: 'Record Again', style: 'cancel' },
+                {
+                  text: 'View Reports',
+                  onPress: () => {
+                    router.back();
+                    setTimeout(() => {
+                      router.push('/(tabs)/profile');
+                    }, 100);
+                  },
                 },
-              },
-            ]
-          );
+              ]
+            );
+          } catch (error) {
+            console.error('Failed to save activity data:', error);
+            Alert.alert('Error', 'Failed to save activity data. Please try again.');
+          }
         },
         onRecordingError: (error: any) => {
           console.error('Recording failed:', error);
-          Alert.alert('Error', 'Failed to record video');
+          Alert.alert('Error', 'Failed to record video. Please check camera permissions and try again.');
         },
       });
     } catch (error) {

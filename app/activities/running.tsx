@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { RotateCcw, X } from 'lucide-react-native';
@@ -55,17 +56,49 @@ export default function CameraScreen() {
       setIsRecording(false);
       setRecordingTime(0);
       
-      Alert.alert(
-        'Body Scan Complete',
-        'Your body scan has been recorded successfully! Ready to start your run?',
-        [
-          { text: 'Scan Again', style: 'cancel' },
-          { 
-            text: 'Start Running', 
-            onPress: () => router.back()
-          }
-        ]
-      );
+      try {
+        const videoData = {
+          id: Date.now().toString(),
+          timestamp: new Date().toISOString(),
+          duration: recordingTime,
+          type: 'running',
+          activity: 'Running',
+          uri: 'recorded_video_uri',
+          status: 'completed'
+        };
+
+        // Save individual video
+        await AsyncStorage.setItem(
+          `activity_video_${videoData.id}`,
+          JSON.stringify(videoData)
+        );
+
+        // Update activity reports
+        const existingReports = await AsyncStorage.getItem('activity_reports');
+        const reports = existingReports ? JSON.parse(existingReports) : [];
+        reports.push(videoData);
+        await AsyncStorage.setItem('activity_reports', JSON.stringify(reports));
+
+        Alert.alert(
+          'Running Session Complete',
+          'Your running session has been recorded and saved to your activity reports!',
+          [
+            { text: 'Record Again', style: 'cancel' },
+            { 
+              text: 'View Reports', 
+              onPress: () => {
+                router.back();
+                setTimeout(() => {
+                  router.push('/(tabs)/profile');
+                }, 100);
+              }
+            }
+          ]
+        );
+      } catch (error) {
+        console.error('Failed to save activity data:', error);
+        Alert.alert('Error', 'Failed to save activity data. Please try again.');
+      }
     } catch (error) {
       console.error('Stop recording failed:', error);
     }

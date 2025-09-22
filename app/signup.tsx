@@ -46,7 +46,7 @@ export default function SignupPage() {
 
     try {
       // Replace with your backend URL
-    const res = await fetch("http://192.168.43.130:3002/api/auth/signup", {
+    const res = await fetch("http://192.168.43.125:3002/api/auth/signup", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ fullname, email, password }),
