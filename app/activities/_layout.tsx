@@ -9,6 +9,8 @@ export default function ActivitiesLayout() {
       <Stack.Screen name="sit-ups" options={{ title: 'Sit-ups' }} />
       <Stack.Screen name="push-ups" options={{ title: 'Push-ups' }} />
       <Stack.Screen name="high-jump" options={{ title: 'High Jump' }} />
+      <Stack.Screen name="shuttle-run" options={{ title: 'Shuttle Run' }} />
+      <Stack.Screen name="endurance-run" options={{ title: 'Endurance Run' }} />
     </Stack>
   );
 }

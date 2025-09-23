@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase"; // make sure your firebase.js exports auth
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,14 +28,45 @@ export default function LoginPage() {
     return;
   }
 
-  setLoading(true);
-  
-  // Simulate login (frontend-only)
-  setTimeout(() => {
+ try {
+    // 🔑 Firebase Authentication login
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
     setLoading(false);
     Alert.alert("Success", "Logged in successfully!");
-    router.push("/(tabs)");
-  }, 1000);
+    router.push("/(tabs)"); // navigate to your main app
+  } catch (error: any) {
+    setLoading(false);
+
+    let errorMessage = "Something went wrong!";
+
+     // Map Firebase errors to user-friendly messages
+    switch (error.code) {
+      case "auth/user-not-found":
+        errorMessage = "No user found with this email. Please sign up first.";
+        break;
+      case "auth/wrong-password":
+        errorMessage = "Incorrect password. Please try again.";
+        break;
+      case "auth/invalid-email":
+        errorMessage = "The email address is invalid.";
+        break;
+      case "auth/invalid-credential": // React Native/Expo often throws this
+        if (error.message.includes("user-not-found")) {
+          errorMessage = "No user found with this email. Please sign up first.";
+        } else if (error.message.includes("wrong-password")) {
+          errorMessage = "Incorrect password. Please try again.";
+        } else {
+          errorMessage = "Invalid email or password.";
+        }
+        break;
+      default:
+        if (error instanceof Error) errorMessage = error.message;
+    }
+
+    Alert.alert("Error", errorMessage);
+  }
 };
 
 

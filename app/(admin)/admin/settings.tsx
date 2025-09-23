@@ -26,8 +26,14 @@ export default function AdminSettingsScreen() {
   });
 
   const [benchmarks, setBenchmarks] = useState({
-    athletics: { male: { pushUps: 30, sitUps: 40, running: 12 }, female: { pushUps: 20, sitUps: 35, running: 14 } },
-    wrestling: { male: { pushUps: 35, sitUps: 45, running: 11 }, female: { pushUps: 25, sitUps: 40, running: 13 } }
+    athletics: {
+      male: { pushUps: 30, sitUps: 40, running: 12, shuttleRun: 8, enduranceRun: 2000 },
+      female: { pushUps: 20, sitUps: 35, running: 14, shuttleRun: 6, enduranceRun: 1500 }
+    },
+    wrestling: {
+      male: { pushUps: 35, sitUps: 45, running: 11, shuttleRun: 9, enduranceRun: 2200 },
+      female: { pushUps: 25, sitUps: 40, running: 13, shuttleRun: 7, enduranceRun: 1600 }
+    }
   });
 
   const updateSetting = (key: keyof SettingsState, value: boolean | number) => {
@@ -67,21 +73,21 @@ export default function AdminSettingsScreen() {
         {/* AI & Detection Settings */}
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>🤖 AI Detection Settings</ThemedText>
-          
+
           <View style={styles.settingCard}>
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <ThemedText type="defaultSemiBold" style={styles.settingLabel}>AI Cheat Detection</ThemedText>
                 <ThemedText style={styles.settingDescription}>Enable AI-powered video analysis for cheating detection</ThemedText>
               </View>
-              <Switch 
-                value={settings.aiDetection} 
+              <Switch
+                value={settings.aiDetection}
                 onValueChange={(value) => updateSetting('aiDetection', value)}
                 trackColor={{ false: '#E5E7EB', true: '#3B82F6' }}
                 thumbColor={settings.aiDetection ? '#FFFFFF' : '#9CA3AF'}
               />
             </View>
-            
+
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <ThemedText type="defaultSemiBold" style={styles.settingLabel}>AI Confidence Threshold</ThemedText>
@@ -95,14 +101,14 @@ export default function AdminSettingsScreen() {
                 maxLength={3}
               />
             </View>
-            
+
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <ThemedText type="defaultSemiBold" style={styles.settingLabel}>Auto-Approval</ThemedText>
                 <ThemedText style={styles.settingDescription}>Automatically approve submissions above threshold</ThemedText>
               </View>
-              <Switch 
-                value={settings.autoApproval} 
+              <Switch
+                value={settings.autoApproval}
                 onValueChange={(value) => updateSetting('autoApproval', value)}
                 trackColor={{ false: '#E5E7EB', true: '#10B981' }}
                 thumbColor={settings.autoApproval ? '#FFFFFF' : '#9CA3AF'}
@@ -114,28 +120,28 @@ export default function AdminSettingsScreen() {
         {/* Notification Settings */}
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>📧 Notification Settings</ThemedText>
-          
+
           <View style={styles.settingCard}>
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <ThemedText type="defaultSemiBold" style={styles.settingLabel}>Email Notifications</ThemedText>
                 <ThemedText style={styles.settingDescription}>Receive email alerts for new submissions</ThemedText>
               </View>
-              <Switch 
-                value={settings.emailNotifications} 
+              <Switch
+                value={settings.emailNotifications}
                 onValueChange={(value) => updateSetting('emailNotifications', value)}
                 trackColor={{ false: '#E5E7EB', true: '#3B82F6' }}
                 thumbColor={settings.emailNotifications ? '#FFFFFF' : '#9CA3AF'}
               />
             </View>
-            
+
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <ThemedText type="defaultSemiBold" style={styles.settingLabel}>SMS Notifications</ThemedText>
                 <ThemedText style={styles.settingDescription}>Receive SMS alerts for flagged submissions</ThemedText>
               </View>
-              <Switch 
-                value={settings.smsNotifications} 
+              <Switch
+                value={settings.smsNotifications}
                 onValueChange={(value) => updateSetting('smsNotifications', value)}
                 trackColor={{ false: '#E5E7EB', true: '#10B981' }}
                 thumbColor={settings.smsNotifications ? '#FFFFFF' : '#9CA3AF'}
@@ -147,7 +153,7 @@ export default function AdminSettingsScreen() {
         {/* System Limits */}
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>🔒 System Limits</ThemedText>
-          
+
           <View style={styles.settingCard}>
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
@@ -162,7 +168,7 @@ export default function AdminSettingsScreen() {
                 maxLength={2}
               />
             </View>
-            
+
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <ThemedText type="defaultSemiBold" style={styles.settingLabel}>Session Timeout</ThemedText>
@@ -182,10 +188,10 @@ export default function AdminSettingsScreen() {
         {/* Performance Benchmarks */}
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>🎯 Performance Benchmarks</ThemedText>
-          
+
           <View style={styles.benchmarkCard}>
             <ThemedText type="defaultSemiBold" style={styles.benchmarkTitle}>Athletics Standards</ThemedText>
-            
+
             <View style={styles.benchmarkGrid}>
               <View style={styles.benchmarkColumn}>
                 <ThemedText style={styles.benchmarkHeader}>Male</ThemedText>
@@ -201,8 +207,20 @@ export default function AdminSettingsScreen() {
                   <ThemedText style={styles.benchmarkLabel}>1.5km (min):</ThemedText>
                   <TextInput style={styles.benchmarkInput} value="12" keyboardType="numeric" />
                 </View>
+                <View style={styles.benchmarkItem}>
+                  <ThemedText style={styles.benchmarkLabel}>Shuttle Run (laps):</ThemedText>
+                  <TextInput
+                    style={styles.benchmarkInput}
+                    value={benchmarks.athletics.male.shuttleRun.toString()}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={styles.benchmarkItem}>
+                  <ThemedText style={styles.benchmarkLabel}>Endurance Run (m):</ThemedText>
+                  <TextInput style={styles.benchmarkInput} value={benchmarks.athletics.male.enduranceRun.toString()} keyboardType="numeric" />
+                </View>
               </View>
-              
+
               <View style={styles.benchmarkColumn}>
                 <ThemedText style={styles.benchmarkHeader}>Female</ThemedText>
                 <View style={styles.benchmarkItem}>
@@ -217,6 +235,14 @@ export default function AdminSettingsScreen() {
                   <ThemedText style={styles.benchmarkLabel}>1.5km (min):</ThemedText>
                   <TextInput style={styles.benchmarkInput} value="14" keyboardType="numeric" />
                 </View>
+                <View style={styles.benchmarkItem}>
+                  <ThemedText style={styles.benchmarkLabel}>Shuttle Run (laps):</ThemedText>
+                  <TextInput style={styles.benchmarkInput} value={benchmarks.athletics.female.shuttleRun.toString()} keyboardType="numeric" />
+                </View>
+                <View style={styles.benchmarkItem}>
+                  <ThemedText style={styles.benchmarkLabel}>Endurance Run (m):</ThemedText>
+                  <TextInput style={styles.benchmarkInput} value={benchmarks.athletics.female.enduranceRun.toString()} keyboardType="numeric" />
+                </View>
               </View>
             </View>
           </View>
@@ -225,20 +251,20 @@ export default function AdminSettingsScreen() {
         {/* Data Management */}
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>💾 Data Management</ThemedText>
-          
+
           <View style={styles.actionGrid}>
             <Pressable style={[styles.actionCard, styles.exportCard]} onPress={exportData}>
               <IconSymbol size={32} name="square.and.arrow.up" color="#3B82F6" />
               <ThemedText type="defaultSemiBold" style={styles.actionTitle}>Export Data</ThemedText>
               <ThemedText style={styles.actionSubtitle}>Download all athlete data and submissions</ThemedText>
             </Pressable>
-            
+
             <Pressable style={[styles.actionCard, styles.backupCard]}>
               <IconSymbol size={32} name="externaldrive" color="#10B981" />
               <ThemedText type="defaultSemiBold" style={styles.actionTitle}>Backup System</ThemedText>
               <ThemedText style={styles.actionSubtitle}>Create system backup</ThemedText>
             </Pressable>
-            
+
             <Pressable style={[styles.actionCard, styles.resetCard]} onPress={resetSystem}>
               <IconSymbol size={32} name="arrow.clockwise" color="#F59E0B" />
               <ThemedText type="defaultSemiBold" style={styles.actionTitle}>Reset System</ThemedText>
@@ -250,7 +276,7 @@ export default function AdminSettingsScreen() {
         {/* System Info */}
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>ℹ️ System Information</ThemedText>
-          
+
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <ThemedText style={styles.infoLabel}>Version:</ThemedText>

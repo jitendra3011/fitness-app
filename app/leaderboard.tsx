@@ -79,6 +79,20 @@ function generateScore(activity: ActivityType): { score: number; metric: string;
 				calories: Math.floor(Math.random() * 120) + 60,
 				duration: Math.floor(Math.random() * 20) + 10
 			};
+		case 'Shuttle Run':
+			return {
+				score: Math.floor(Math.random() * 6) + 4, 
+				metric: 'laps',
+				calories: Math.floor(Math.random() * 200) + 100, 
+				duration: Math.floor(Math.random() * 15) + 5 
+			};
+		case 'Endurance Run':
+			return {
+				score: Math.floor(Math.random() * 2000) + 1000, 
+				metric: 'm',
+				calories: Math.floor(Math.random() * 500) + 200,
+				duration: Math.floor(Math.random() * 60) + 20 
+			};
 		default:
 			return { score: 0, metric: 'pts', calories: 0, duration: 0 };
 	}
@@ -90,9 +104,11 @@ function getPerformanceLevel(score: number, activity: ActivityType): 'Beginner' 
 		'Push-ups': { beginner: 30, intermediate: 60, advanced: 90 },
 		'Sit-ups': { beginner: 40, intermediate: 80, advanced: 120 },
 		'High Jump': { beginner: 130, intermediate: 160, advanced: 190 },
-		'Long Jump': { beginner: 350, intermediate: 450, advanced: 550 }
+		'Long Jump': { beginner: 350, intermediate: 450, advanced: 550 },
+		'Shuttle Run': { beginner: 4, intermediate: 6, advanced: 8 },
+		'Endurance Run': { beginner: 1000, intermediate: 2000, advanced: 3000 },
 	};
-	
+
 	const threshold = thresholds[activity as keyof typeof thresholds] || thresholds['Running'];
 	if (score >= threshold.advanced) return 'Elite';
 	if (score >= threshold.intermediate) return 'Advanced';
@@ -101,9 +117,9 @@ function getPerformanceLevel(score: number, activity: ActivityType): 'Beginner' 
 }
 
 function generateMockData(): Record<ActivityType, FitnessEntry[]> {
-	const activities: ActivityType[] = ['Running', 'Push-ups', 'Sit-ups', 'High Jump', 'Long Jump'];
+	const activities: ActivityType[] = ['Running', 'Push-ups', 'Sit-ups', 'High Jump', 'Long Jump', 'Shuttle Run', 'Endurance Run'];
 	const data: Record<ActivityType, FitnessEntry[]> = {} as any;
-	
+
 	activities.forEach(activity => {
 		data[activity] = fitnessNames.map((name, index) => {
 			const scoreData = generateScore(activity);
@@ -126,7 +142,7 @@ function generateMockData(): Record<ActivityType, FitnessEntry[]> {
 			};
 		}).sort((a, b) => b.score - a.score);
 	});
-	
+
 	return data;
 }
 
@@ -226,12 +242,12 @@ export default function LeaderboardScreen() {
 						<Row key={entry.user.id} index={idx} entry={entry} onPress={() => setSelectedAthlete(entry)} />
 					))}
 				</View>
-				
-				<AthleteModal 
-					visible={!!selectedAthlete} 
-					athlete={selectedAthlete} 
+
+				<AthleteModal
+					visible={!!selectedAthlete}
+					athlete={selectedAthlete}
 					activity={activity}
-					onClose={() => setSelectedAthlete(null)} 
+					onClose={() => setSelectedAthlete(null)}
 				/>
 			</ScrollView>
 		</ThemedView>
@@ -249,7 +265,7 @@ function Row({ index, entry, onPress }: { index: number; entry: FitnessEntry; on
 			default: return rank.toString();
 		}
 	};
-	
+
 	const getPerformanceColor = (level: string) => {
 		switch (level) {
 			case 'Elite': return '#FFD700';
@@ -258,7 +274,7 @@ function Row({ index, entry, onPress }: { index: number; entry: FitnessEntry; on
 			default: return '#95A5A6';
 		}
 	};
-	
+
 	return (
 		<Pressable style={[styles.row, rank <= 3 && styles.topRow]} onPress={onPress}>
 			<View style={styles.rankCol}>
@@ -291,14 +307,14 @@ function Row({ index, entry, onPress }: { index: number; entry: FitnessEntry; on
 	);
 }
 
-function AthleteModal({ visible, athlete, activity, onClose }: { 
-	visible: boolean; 
-	athlete: FitnessEntry | null; 
+function AthleteModal({ visible, athlete, activity, onClose }: {
+	visible: boolean;
+	athlete: FitnessEntry | null;
 	activity: ActivityType;
-	onClose: () => void; 
+	onClose: () => void;
 }) {
 	if (!athlete) return null;
-	
+
 	return (
 		<Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
 			<View style={styles.modalContainer}>
@@ -306,13 +322,13 @@ function AthleteModal({ visible, athlete, activity, onClose }: {
 					<Pressable style={styles.closeBtn} onPress={onClose}>
 						<Text style={styles.closeBtnText}>✕</Text>
 					</Pressable>
-					
+
 					<View style={styles.profileSection}>
 						<Image source={{ uri: athlete.user.avatarUrl }} style={styles.profileAvatar} contentFit="cover" />
 						<ThemedText type="title" style={styles.profileName}>{athlete.user.fullName}</ThemedText>
 						<ThemedText style={styles.locationText}>📍 {athlete.user.state}, {athlete.user.village}</ThemedText>
 					</View>
-					
+
 					<View style={styles.statsGrid}>
 						<View style={styles.statBox}>
 							<ThemedText style={styles.statValue}>{athlete.user.age}</ThemedText>
@@ -331,14 +347,14 @@ function AthleteModal({ visible, athlete, activity, onClose }: {
 							<ThemedText style={styles.statLabel}>Duration</ThemedText>
 						</View>
 					</View>
-					
+
 					<View style={styles.performanceCard}>
 						<ThemedText type="subtitle" style={styles.cardTitle}>🏆 Performance Level</ThemedText>
 						<View style={[styles.levelBadge, { backgroundColor: athlete.performanceLevel === 'Elite' ? '#FFD700' : '#4ECDC4' }]}>
 							<ThemedText style={styles.levelText}>{athlete.performanceLevel}</ThemedText>
 						</View>
 					</View>
-					
+
 					<View style={styles.ctaSection}>
 						<ThemedText style={styles.ctaTitle}>💪 Ready to Beat This Score?</ThemedText>
 						<ThemedText style={styles.ctaSubtitle}>Join thousands of athletes and start your fitness journey today!</ThemedText>

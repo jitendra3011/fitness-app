@@ -13,6 +13,9 @@ const EMOJI_MAPPING: Record<string, string> = {
   'figure.strengthtraining.traditional': '💪',
   'paperplane.fill': '✈️',
   'line.3.horizontal': '☰',
+  'goldAward': '🥇',
+  'silverAward': '🥈',
+  'bronzeAward': '🥉',
 };
 
 export function IconSymbol({

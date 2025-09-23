@@ -9,7 +9,7 @@ export type ActivityType =
   
 
 
-export type LeaderboardMetricUnit = 'km' | 'reps' | 'cm' | 'pts' | 'seconds';
+export type LeaderboardMetricUnit = 'km' | 'm' | 'reps' | 'cm' | 'laps' | 'pts' | 'seconds';
 
 export interface LeaderboardUser {
   id: string;

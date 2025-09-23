@@ -58,6 +58,8 @@ export const mockLeaderboard: Leaderboard = {
   'Sit-ups': [entry(1, 82, 'reps'), entry(4, 79, 'reps'), entry(3, 75, 'reps')],
   'Push-ups': [entry(4, 65, 'reps'), entry(2, 60, 'reps'), entry(0, 58, 'reps')],
   'High Jump': [entry(3, 145, 'cm'), entry(1, 142, 'cm'), entry(0, 140, 'cm')],
+  'Shuttle Run': [entry(0, 8, 'laps'), entry(1, 7, 'laps'), entry(2, 6, 'laps')],
+  'Endurance Run': [entry(4, 2200, 'm'), entry(3, 2000, 'm'), entry(1, 1800, 'm')],
 };
 
 

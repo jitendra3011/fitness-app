@@ -19,9 +19,11 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DiamondAwardIcon, GoldAwardIcon, SilverAwardIcon } from '../icons';
-import type { ActivityType, LeaderboardEntry } from '@/lib/types';
-import { Button } from '../ui/button';
+// import { DiamondAwardIcon, GoldAwardIcon, SilverAwardIcon } from '../icons';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ActivityType, LeaderboardEntry } from '@/src/lib/types';
+import { Button } from '@/components/ui/button';
+import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Lightbulb, Loader2 } from 'lucide-react';
 import { generateLeaderboardSummary } from '@/ai/flows/generate-leaderboard-summary';
@@ -36,14 +38,16 @@ const activityOptions: ActivityType[] = [
   'Sit-ups',
   'Push-ups',
   'High Jump',
+  'Shuttle Run',
+  'Endurance Run',
 ];
 
 const locationOptions = ['All', 'California', 'Texas', 'New York', 'Florida'];
 
 const getMedal = (rank: number) => {
-  if (rank === 1) return <DiamondAwardIcon className="h-6 w-6 text-blue-400" />;
-  if (rank === 2) return <GoldAwardIcon className="h-6 w-6 text-yellow-400" />;
-  if (rank === 3) return <SilverAwardIcon className="h-6 w-6 text-gray-400" />;
+  if (rank === 1) return <IconSymbol name="goldAward" size={24} />; // 🥇
+  if (rank === 2) return <IconSymbol name="silverAward" size={24} />; // 🥈
+  if (rank === 3) return <IconSymbol name="bronzeAward" size={24} />; // 🥉
   return <span className="text-sm font-medium">{rank}</span>;
 };
 
@@ -94,7 +98,7 @@ export function LeaderboardClient({ initialData }: LeaderboardClientProps) {
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Activity</label>
             <Select
-              value={selectedActivity}
+              defaultValue={selectedActivity}
               onValueChange={(value) => {
                 startTransition(() => {
                   setSelectedActivity(value as ActivityType);
@@ -117,7 +121,7 @@ export function LeaderboardClient({ initialData }: LeaderboardClientProps) {
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Location</label>
             <Select
-              value={selectedLocation}
+              defaultValue={selectedLocation}
               onValueChange={(value) => {
                  startTransition(() => {
                   setSelectedLocation(value);

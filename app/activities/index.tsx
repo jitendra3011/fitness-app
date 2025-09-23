@@ -14,6 +14,8 @@ export default function ActivitiesIndex() {
 				<Link href="/activities/sit-ups" style={styles.item}>Sit-ups</Link>
 				<Link href="/activities/push-ups" style={styles.item}>Push-ups</Link>
 				<Link href="/activities/high-jump" style={styles.item}>High Jump</Link>
+				<Link href="/activities/shuttle-run" style={styles.item}>Shuttle Run</Link>
+				<Link href="/activities/endurance-run" style={styles.item}>Endurance Run</Link>
 			</View>
 		</ThemedView>
 	);

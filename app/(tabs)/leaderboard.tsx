@@ -79,6 +79,20 @@ function generateScore(activity: ActivityType): { score: number; metric: string;
 				calories: Math.floor(Math.random() * 120) + 60,
 				duration: Math.floor(Math.random() * 20) + 10
 			};
+		case 'Shuttle Run':
+			return {
+				score: Math.floor(Math.random() * 6) + 4,
+				metric: 'laps',
+				calories: Math.floor(Math.random() * 200) + 100,
+				duration: Math.floor(Math.random() * 15) + 5
+			};
+		case 'Endurance Run':
+			return {
+				score: Math.floor(Math.random() * 2000) + 1000,
+				metric: 'm',
+				calories: Math.floor(Math.random() * 500) + 200,	
+				duration: Math.floor(Math.random() * 60) + 20
+			};
 		default:
 			return { score: 0, metric: 'pts', calories: 0, duration: 0 };
 	}
@@ -90,7 +104,9 @@ function getPerformanceLevel(score: number, activity: ActivityType): 'Beginner' 
 		'Push-ups': { beginner: 30, intermediate: 60, advanced: 90 },
 		'Sit-ups': { beginner: 40, intermediate: 80, advanced: 120 },
 		'High Jump': { beginner: 130, intermediate: 160, advanced: 190 },
-		'Long Jump': { beginner: 350, intermediate: 450, advanced: 550 }
+		'Long Jump': { beginner: 350, intermediate: 450, advanced: 550 },
+		'Shuttle Run': { beginner: 6, intermediate: 8, advanced: 10 },
+		'Endurance Run': { beginner: 1500, intermediate: 2500, advanced: 3500 }
 	};
 	
 	const threshold = thresholds[activity] || thresholds['Running'];
@@ -101,7 +117,7 @@ function getPerformanceLevel(score: number, activity: ActivityType): 'Beginner' 
 }
 
 function generateMockData(): Record<ActivityType, FitnessEntry[]> {
-	const activities: ActivityType[] = ['Running', 'Push-ups', 'Sit-ups', 'High Jump', 'Long Jump'];
+	const activities: ActivityType[] = ['Running', 'Push-ups', 'Sit-ups', 'High Jump', 'Long Jump', 'Shuttle Run', 'Endurance Run'];
 	const data: Record<ActivityType, FitnessEntry[]> = {} as any;
 	
 	activities.forEach(activity => {

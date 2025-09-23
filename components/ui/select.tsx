@@ -96,10 +96,11 @@ export function SelectContent({ children }: SelectContentProps) {
   React.useEffect(() => {
     const items: { value: string; label: string }[] = [];
     React.Children.forEach(children, (child) => {
-      if (React.isValidElement(child) && child.props.value) {
+      if (React.isValidElement(child) && (child as React.ReactElement<SelectItemProps>).props.value) {
+        const childProps = (child as React.ReactElement<SelectItemProps>).props;
         items.push({
-          value: child.props.value,
-          label: typeof child.props.children === 'string' ? child.props.children : child.props.value
+          value: childProps.value,
+          label: typeof childProps.children === 'string' ? childProps.children : childProps.value
         });
       }
     });

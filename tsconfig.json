@@ -10,9 +10,11 @@
       "@admin/*": [
         "components/admin/*"
       ],
+      "@components/*": ["components/*"],
       "@lib/*": [
         "src/lib/*"
-      ]
+      ],
+      "@ai/*": ["src/ai/*"]
     }
   },
   "include": [

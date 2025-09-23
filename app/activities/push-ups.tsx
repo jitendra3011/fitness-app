@@ -48,7 +48,7 @@ export default function CameraScreen() {
               id: Date.now().toString(),
               timestamp: new Date().toISOString(),
               duration: recordingTime,
-              type: 'push_ups',
+              type: 'push-ups',
               activity: 'Push-ups',
               uri: video?.uri,
               status: 'completed'
