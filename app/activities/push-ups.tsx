@@ -2,19 +2,51 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
+// import { usePermissions, PermissionStatus } from 'expo-permissions'; // optional for mic
 import { router } from 'expo-router';
 import { RotateCcw, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { uploadVideoAndGetUrl } from "@/assets/firebaseUpload"; // helper banayenge niche
+import { getAuth } from "firebase/auth";
+// import * as Audio from 'expo-av';
+import { Audio } from 'expo-av';
+
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
+
+  // const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  // const [audioPermission, requestAudioPermission] = Audio.usePermissions(); // 👈 mic permission
+
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
 
   const cameraRef = useRef<any>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+useEffect(() => {
+  const requestAudioPermission = async () => {
+    const { status } = await Audio.requestPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission required", "Microphone permission is required to record audio");
+    }
+  };
+  requestAudioPermission();
+}, []);
+
+
+useEffect(() => {
+  const requestPermissions = async () => {
+    const cameraPermission = await requestPermission();
+    if (!cameraPermission?.granted) {
+      Alert.alert('Camera (and microphone) permission required');
+    }
+  };
+  requestPermissions();
+}, []);
+
 
   // Auto start recording after 1s if permission granted
   useEffect(() => {
@@ -38,79 +70,38 @@ export default function CameraScreen() {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
 
-      await cameraRef.current.startRecording({
+      const video = await cameraRef.current.recordAsync({
         maxDuration: 30,
-        onRecordingFinished: async (video: { uri: string }) => {
-          console.log('Video recorded:', video?.uri);
-
-          try {
-            const videoData = {
-              id: Date.now().toString(),
-              timestamp: new Date().toISOString(),
-              duration: recordingTime,
-              type: 'push-ups',
-              activity: 'Push-ups',
-              uri: video?.uri,
-              status: 'completed'
-            };
-
-            // Save individual video
-            await AsyncStorage.setItem(
-              `activity_video_${videoData.id}`,
-              JSON.stringify(videoData)
-            );
-
-            // Update activity reports
-            const existingReports = await AsyncStorage.getItem('activity_reports');
-            const reports = existingReports ? JSON.parse(existingReports) : [];
-            reports.push(videoData);
-            await AsyncStorage.setItem('activity_reports', JSON.stringify(reports));
-
-            Alert.alert(
-              'Push-ups Session Complete',
-              'Your push-ups session has been recorded and saved to your activity reports!',
-              [
-                { text: 'Record Again', style: 'cancel' },
-                {
-                  text: 'View Reports',
-                  onPress: () => {
-                    router.back();
-                    setTimeout(() => {
-                      router.push('/(tabs)/profile');
-                    }, 100);
-                  },
-                },
-              ]
-            );
-          } catch (error) {
-            console.error('Failed to save activity data:', error);
-            Alert.alert('Error', 'Failed to save activity data. Please try again.');
-          }
-        },
-        onRecordingError: (error: any) => {
-          console.error('Recording failed:', error);
-          Alert.alert('Error', 'Failed to record video. Please check camera permissions and try again.');
-        },
+        mute: false,
+        // quality: Camera.Constants.VideoQuality['480p'], // optional
       });
+
+      const user = getAuth().currentUser;
+      const downloadURL = await uploadVideoAndGetUrl(video.uri);
+
+      await fetch("http://YOUR-NODE-BACKEND/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoURL: downloadURL, userId: user?.uid ?? "guest" }),
+      });
+
+      Alert.alert("Success", "Video uploaded! Analysis in progress...");
+
     } catch (error) {
       console.error('Recording failed:', error);
       Alert.alert('Error', 'Failed to record video');
-    }
-  };
-
-  const stopRecording = async () => {
-    try {
-      if (cameraRef.current && isRecording) {
-        await cameraRef.current.stopRecording();
-      }
-    } catch (error) {
-      console.error('Stop recording failed:', error);
     } finally {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
       setIsRecording(false);
+    }
+  };
+
+  const stopRecording = () => {
+    if (cameraRef.current && isRecording) {
+      cameraRef.current.stopRecording(); // this works
     }
   };
 
