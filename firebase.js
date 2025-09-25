@@ -11,13 +11,12 @@ const firebaseConfig = {
     // storageBucket: "fitness-app-7ecc8.firebasestorage.app",
     storageBucket: "fitness-app-7ecc8.appspot.com",
     messagingSenderId: "1085549129411",
-    //   messagingSenderId: "parepallinagavinay1234@gmail.com",
     appId: "1:1085549129411:android:746d227417adf300847c76"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
+export { app }; 
 // Initialize Firestore
 export const db = getFirestore(app);
 export const auth = getAuth(app);
