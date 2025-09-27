@@ -49,6 +49,7 @@ export default function RootLayout() {
           <Stack.Screen name="signup" options={{ headerShown: false }} />
           <Stack.Screen name="terms-conditions" options={{ headerShown: false }} />
           <Stack.Screen name="privacy" options={{ headerShown: false }} />
+          <Stack.Screen name="MyActivities" options={{ headerShown: false }} />
 
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
@@ -106,6 +107,10 @@ function SidebarLinks() {
       <Pressable style={styles.navItem} onPress={() => { router.push('/terms-conditions'); close(); }}>
         <IconSymbol size={20} name="doc.plaintext" color="#9CA3AF" />
         <ThemedText type="defaultSemiBold" style={styles.navText}>Terms & Conditions</ThemedText>
+      </Pressable>
+      <Pressable style={styles.navItem} onPress={() => { router.push('/MyActivities'); close(); }}>
+        <IconSymbol size={20} name="doc.plaintext" color="#9CA3AF" />
+        <ThemedText type="defaultSemiBold" style={styles.navText}>My Activities</ThemedText>
       </Pressable>
     </View>
   );

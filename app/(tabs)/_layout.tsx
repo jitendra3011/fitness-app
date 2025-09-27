@@ -48,26 +48,26 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-    name="profile"
-    options={{
-      title: 'Profile',
-      tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle" color={color} />,
-    }}
-  />
-  <Tabs.Screen
-    name="activities"
-    options={{
-      title: 'Activities',
-      tabBarIcon: ({ color }) => <IconSymbol size={28} name="flame.fill" color={color} />,
-    }}
-  />
-  <Tabs.Screen
-    name="leaderboard"
-    options={{
-      title: 'Leaderboard',
-      tabBarIcon: ({ color }) => <IconSymbol size={28} name="trophy.fill" color={color} />,
-    }}
-  />
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="activities"
+        options={{
+          title: 'Activities',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="flame.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: 'Leaderboard',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="trophy.fill" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
