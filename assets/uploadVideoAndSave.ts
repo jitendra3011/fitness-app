@@ -8,39 +8,44 @@ export async function uploadVideoAndSave(
   activityName: string,
   uri: string
 ) {
-  // Convert video to binary
-  const response = await fetch(uri);
-  const arrayBuffer = await response.arrayBuffer();
+  try {
+    // Convert video to binary
+    const response = await fetch(uri);
+    const arrayBuffer = await response.arrayBuffer();
 
-  // Generate unique file name
-  const ext = uri.split('.').pop()?.split('?')[0] ?? 'mp4';
-  const storagePath = `${userId}/${activityName}/${Date.now()}.${ext}`;
-  const contentType = 'video/mp4';
+    // Generate unique file name
+    const ext = uri.split('.').pop()?.split('?')[0] ?? 'mp4';
+    const storagePath = `${userId}/${activityName}/${Date.now()}.${ext}`;
+    const contentType = 'video/mp4';
 
-  // Upload to Supabase
-  const { error: uploadError } = await supabase.storage
-    .from('VideoBucket')
-    .upload(storagePath, arrayBuffer, { contentType });
+    // Upload to Supabase
+    const { error: uploadError } = await supabase.storage
+      .from('VideoBucket')
+      .upload(storagePath, arrayBuffer, { contentType });
 
-  if (uploadError) throw uploadError;
+    if (uploadError) throw uploadError;
 
-  // Get public URL
-  const { data: publicData } = supabase.storage
-    .from('VideoBucket')
-    .getPublicUrl(storagePath);
+    // Get public URL
+    const { data: publicData } = supabase.storage
+      .from('VideoBucket')
+      .getPublicUrl(storagePath);
 
-  const publicUrl = publicData.publicUrl;
+    const publicUrl = publicData.publicUrl;
 
-  // Save in Firestore
-  const videosColRef = collection(db, 'users', userId, 'videos');
-  const docRef = await addDoc(videosColRef, {
-    activity: activityName,
-    url: publicUrl,
-    storagePath,              // ✅ DELETE ke liye required
-    uploadedAt: serverTimestamp()
-  });
+    // Save in Firestore
+    const videosColRef = collection(db, 'users', userId, 'videos');
+    const docRef = await addDoc(videosColRef, {
+      activity: activityName,
+      url: publicUrl,
+      storagePath, // ✅ Delete ke liye zaroori
+      uploadedAt: serverTimestamp(),
+    });
 
-  return { publicUrl, storagePath, docId: docRef.id };
+    return { publicUrl, storagePath, docId: docRef.id };
+  } catch (err) {
+    console.error('Upload failed:', err);
+    throw err;
+  }
 }
 
 
