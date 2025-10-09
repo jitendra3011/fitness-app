@@ -19,14 +19,14 @@ export default function TabLayout() {
         headerLeft: ({ tintColor }) => (
           <View style={{ paddingLeft: 12 }}>
             <Sidebar.Trigger>
-              <IconSymbol size={24} name="line.3.horizontal" color={tintColor ?? Colors[colorScheme ?? 'light'].tint} />
+              <IconSymbol size={20} name="line.3.horizontal" color={tintColor ?? Colors[colorScheme ?? 'light'].tint} />
             </Sidebar.Trigger>
           </View>
         ),
         headerRight: ({ tintColor }) => (
           <View style={{ paddingRight: 12 }}>
             <Pressable onPress={() => router.push('/admin/users' as any)}>
-              <IconSymbol size={24} name="person.crop.circle" color={tintColor ?? Colors[colorScheme ?? 'light'].tint} />
+              <IconSymbol size={20} name="person.crop.circle" color={tintColor ?? Colors[colorScheme ?? 'light'].tint} />
             </Pressable>
           </View>
         ),
@@ -37,35 +37,35 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           // tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={20} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={20} name="paperplane.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={20} name="person.crop.circle" color={color} />,
         }}
       />
       <Tabs.Screen
         name="activities"
         options={{
           title: 'Activities',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="flame.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={20} name="run" color={color} />,
         }}
       />
       <Tabs.Screen
         name="leaderboard"
         options={{
           title: 'Leaderboard',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="trophy.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={20} name="trophy.fill" color={color} />,
         }}
       />
     </Tabs>

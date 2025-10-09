@@ -10,12 +10,16 @@ const EMOJI_MAPPING: Record<string, string> = {
   'arrow.right.square.fill': '🔑',
   'doc.text': '📄',
   'doc.plaintext': '📋',
+  'chart.bar.fill': '📊',
+  'video': '🎥',
+  'blogs': '📝',
   'figure.strengthtraining.traditional': '💪',
   'paperplane.fill': '✈️',
   'line.3.horizontal': '☰',
   'goldAward': '🥇',
   'silverAward': '🥈',
   'bronzeAward': '🥉',
+  'run': '🏃',
 };
 
 export function IconSymbol({

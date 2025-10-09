@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { CameraView, CameraType, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { RotateCcw, X } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { getAuth } from 'firebase/auth';
@@ -8,7 +8,9 @@ import { uploadVideoAndSave } from '@/assets/uploadVideoAndSave';
 
 export default function Longjump() {
   const [facing, setFacing] = useState<CameraType>('back');
-  const [permission, requestPermission] = useCameraPermissions();
+  // const [permission, requestPermission] = useCameraPermissions();
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [micPermission, requestMicPermission] = useMicrophonePermissions();
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -16,15 +18,29 @@ export default function Longjump() {
   const cameraRef = useRef<any>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // useEffect(() => {
+  //   const requestPermissions = async () => {
+  //     const cameraPermission = await requestPermission();
+  //     if (!cameraPermission?.granted) {
+  //       Alert.alert('Camera permission required');
+  //     }
+  //   };
+  //   requestPermissions();
+  // }, []);
+
   useEffect(() => {
-    const requestPermissions = async () => {
-      const cameraPermission = await requestPermission();
-      if (!cameraPermission?.granted) {
-        Alert.alert('Camera permission required');
-      }
-    };
-    requestPermissions();
-  }, []);
+  const requestPermissions = async () => {
+    const cam = await requestCameraPermission();
+    if (!cam?.granted) {
+      Alert.alert('Camera permission required');
+    }
+    const mic = await requestMicPermission();
+    if (!mic?.granted) {
+      Alert.alert('Microphone permission required');
+    }
+  };
+  requestPermissions();
+}, []);
 
   const formatRecordingTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -47,7 +63,7 @@ export default function Longjump() {
       setRecordingTime((prev) => prev + 1);
     }, 1000);
 
-    const videoPromise = cameraRef.current.recordAsync({ maxDuration: 60, mute: false });
+    const videoPromise = cameraRef.current.recordAsync({ maxDuration: 60, mute: true });
 
     // Wait for recording to finish (stopRecording will resolve this)
     const video = await videoPromise;
@@ -82,7 +98,7 @@ const stopRecording = () => {
   }
 };
 
-  if (!permission) {
+  if (!cameraPermission || !micPermission ) {
     return (
       <View style={styles.container}>
         <Text style={{ color: 'white' }}>Loading camera...</Text>
@@ -90,16 +106,26 @@ const stopRecording = () => {
     );
   }
 
-  if (!permission.granted) {
+  if (!cameraPermission.granted) {
     return (
       <View style={styles.container}>
         <Text style={{ color: 'white', marginBottom: 12 }}>Camera Permission Required</Text>
-        <Pressable onPress={requestPermission} style={styles.permissionButton}>
+        <Pressable onPress={requestCameraPermission} style={styles.permissionButton}>
           <Text style={{ color: 'white' }}>Grant Camera Permission</Text>
         </Pressable>
       </View>
     );
   }
+  if (!micPermission.granted) {
+  return (
+    <View style={styles.container}>
+      <Text style={{ color: 'white', marginBottom: 12 }}>Microphone Permission Required</Text>
+      <Pressable onPress={requestMicPermission} style={styles.permissionButton}>
+        <Text style={{ color: 'white' }}>Grant Microphone Permission</Text>
+      </Pressable>
+    </View>
+  );
+}
 
   return (
     <View style={styles.container}>

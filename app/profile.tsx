@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Image, Alert, Pressable, ScrollView, StyleSheet, TextInput, View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { auth, db, storage } from '@/firebase';
+import { auth, db } from '@/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
-import { Picker } from '@react-native-picker/picker';
+import { supabase } from '@/assets/supabaseClient';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -25,6 +25,8 @@ export default function ProfileScreen() {
   const [regionState, setRegionState] = useState('');
   const [village, setVillage] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Full name & email from logged-in user
   const registeredInfo = useMemo(() => ({
@@ -42,9 +44,9 @@ export default function ProfileScreen() {
         const data = docSnap.data();
         setFullName(data.fullname || '');
         setPhone(data.phone || '');
-        setWeight(data.weight || '');
-        setHeight(data.height || '');
-        setAge(data.age || '');
+        setWeight(data.weight ? String(data.weight) : ''); // Convert to string
+        setHeight(data.height ? String(data.height) : ''); // Convert to string
+        setAge(data.age ? String(data.age) : ''); // Convert to string
         setGender(data.gender || '');
         setCity(data.city || '');
         setRegionState(data.regionState || '');
@@ -62,108 +64,173 @@ export default function ProfileScreen() {
 
   // Pick profile image
   const pickImage = useCallback(async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission required', 'We need access to your photos.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled) {
-      setPhotoUri(result.assets[0].uri);
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'We need access to your photos.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'images',
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        allowsMultipleSelection: false,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setPhotoUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Image picker error:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   }, []);
 
-  // Upload image to Firebase Storage
- const uploadProfilePhoto = async (uri: string) => {
-  if (!user) return null;
+// Upload image to Supabase Storage
+const uploadProfilePhoto = async (uri: string) => {
+  if (!user) {
+    Alert.alert("Error", "User not authenticated");
+    return null;
+  }
 
   try {
-    // Expo URI to Blob
-    const response = await fetch(uri);
-    const blob = await response.blob();
+    setUploading(true);
+    setUploadProgress(10);
 
-    // Firebase Storage reference
-    const storageRef = ref(storage, `profile_photos/${user.uid}.jpg`);
+    // Read file as base64
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: 'base64', // Changed from FileSystem.EncodingType.Base64
+    });
 
-    // Upload
-    await uploadBytes(storageRef, blob);
+    setUploadProgress(30);
 
-    // Get downloadable URL
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
-  } catch (error) {
+    // Get file extension
+    const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
+    const fileName = `${user.uid}_${Date.now()}.${fileExt}`;
+    const filePath = `profile_photos/${fileName}`;
+
+    setUploadProgress(50);
+
+    // Decode base64 to ArrayBuffer
+    const arrayBuffer = decode(base64);
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('profile-images')
+      .upload(filePath, arrayBuffer, {
+        contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
+        upsert: true,
+      });
+
+    if (error) {
+      console.error('Supabase upload error:', error);
+      throw error;
+    }
+
+    setUploadProgress(80);
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('profile-images')
+      .getPublicUrl(filePath);
+
+    setUploadProgress(100);
+    setUploading(false);
+
+    console.log('Upload successful:', urlData.publicUrl);
+    return urlData.publicUrl;
+
+  } catch (error: any) {
+    setUploading(false);
+    setUploadProgress(0);
     console.error("Upload failed:", error);
-    Alert.alert("Error", "Failed to upload photo.");
+    
+    Alert.alert("Upload Error", error.message || "Failed to upload photo");
     return null;
   }
 };
 
+// Helper function to decode base64 to ArrayBuffer
+function decode(base64: string): ArrayBuffer {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
   // Save profile to Firestore
   const onSave = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      Alert.alert("Error", "User not authenticated");
+      return;
+    }
 
-      // 🔹 Validations
-  if (!fullName || !phone || !weight || !height || !age || !gender || !city || !regionState || !village) {
-    Alert.alert("Validation Error", "All fields are required.");
-    return;
-  }
+    // Validations
+    if (!fullName || !phone || !weight || !height || !age || !gender || !city || !regionState || !village) {
+      Alert.alert("Validation Error", "All fields are required.");
+      return;
+    }
 
-  // Phone number validation (10 digits)
-  const phoneRegex = /^[0-9]{10}$/;
-  if (!phoneRegex.test(phone)) {
-    Alert.alert("Validation Error", "Phone number must be 10 digits.");
-    return;
-  }
+    // Phone number validation (10 digits)
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phone)) {
+      Alert.alert("Validation Error", "Phone number must be 10 digits.");
+      return;
+    }
 
-  // Height validation (in cm, numeric & range check)
-  const heightNum = parseInt(height, 10);
-  if (isNaN(heightNum) || heightNum < 50 || heightNum > 300) {
-    Alert.alert("Validation Error", "Height must be a valid number between 50cm and 300cm.");
-    return;
-  }
-// Photo validation (required)
-if (!photoUri) {
-  Alert.alert("Validation Error", "Profile photo is required (full-body photo).");
-  return;
-}
-  // Weight validation (in kg, numeric & range check)
-  const weightNum = parseInt(weight, 10);
-  if (isNaN(weightNum) || weightNum < 20 || weightNum > 500) {
-    Alert.alert("Validation Error", "Weight must be a valid number between 20kg and 500kg.");
-    return;
-  }
+    // Height validation (in cm, numeric & range check)
+    const heightNum = parseInt(height, 10);
+    if (isNaN(heightNum) || heightNum < 50 || heightNum > 300) {
+      Alert.alert("Validation Error", "Height must be a valid number between 50cm and 300cm.");
+      return;
+    }
 
-  // Age validation
-  const ageNum = parseInt(age, 10);
-  if (isNaN(ageNum) || ageNum < 1 || ageNum > 120) {
-    Alert.alert("Validation Error", "Age must be a valid number between 1 and 120.");
-    return;
-  }
-  if (!gender) {
-  Alert.alert("Validation Error", "Please select your gender.");
-  return;
-}
+    // Photo validation (required)
+    if (!photoUri) {
+      Alert.alert("Validation Error", "Profile photo is required (full-body photo).");
+      return;
+    }
 
-let photoURL = photoUri;
-if (photoUri && !photoUri.startsWith('https://')) {
-  const uploaded = await uploadProfilePhoto(photoUri);
-  if (uploaded) {
-    photoURL = uploaded;
-  }
-}
+    // Weight validation (in kg, numeric & range check)
+    const weightNum = parseInt(weight, 10);
+    if (isNaN(weightNum) || weightNum < 20 || weightNum > 500) {
+      Alert.alert("Validation Error", "Weight must be a valid number between 20kg and 500kg.");
+      return;
+    }
+
+    // Age validation
+    const ageNum = parseInt(age, 10);
+    if (isNaN(ageNum) || ageNum < 1 || ageNum > 120) {
+      Alert.alert("Validation Error", "Age must be a valid number between 1 and 120.");
+      return;
+    }
+
+    if (!gender) {
+      Alert.alert("Validation Error", "Please select your gender.");
+      return;
+    }
+
+    let photoURL = photoUri;
+    
+    // Only upload if it's a new local photo (not already a Supabase URL)
+    if (photoUri && !photoUri.startsWith('http')) {
+      const uploaded = await uploadProfilePhoto(photoUri);
+      if (!uploaded) {
+        // Upload failed, don't proceed
+        return;
+      }
+      photoURL = uploaded;
+    }
 
     try {
       await setDoc(doc(db, 'users', user.uid), {
         fullname: fullName, 
         phone,
-        weight : weightNum,
-        height : heightNum,
-        age : ageNum,
+        weight: weightNum,
+        height: heightNum,
+        age: ageNum,
         gender,
         city,
         regionState,
@@ -172,11 +239,11 @@ if (photoUri && !photoUri.startsWith('https://')) {
         updatedAt: new Date().toISOString(),
       }, { merge: true });
 
-       // 🔹 Firebase Auth user profile update
-    await updateProfile(user, {
-      displayName: fullName,
-      photoURL: photoURL || user.photoURL,
-    });
+      // Firebase Auth user profile update
+      await updateProfile(user, {
+        displayName: fullName,
+        photoURL: photoURL || user.photoURL,
+      });
 
       Alert.alert('Success', 'Profile updated successfully!', [
         { text: 'OK', onPress: () => router.replace('/(tabs)') },
@@ -185,114 +252,127 @@ if (photoUri && !photoUri.startsWith('https://')) {
       console.error('Error saving profile:', error);
       Alert.alert('Error', 'Failed to save profile.');
     }
-  }, [user, phone, weight, height, age, gender, city, regionState, village, photoUri, router]);
+  }, [user, fullName, phone, weight, height, age, gender, city, regionState, village, photoUri, router]);
 
   return (
-  <ThemedView style={{ flex: 1 }}>
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ThemedView style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
-      {/* Registered Info */}
-      <View style={styles.sectionCard}>
-        <ThemedText type="defaultSemiBold">Registered Information</ThemedText>
-        <ThemedText>Full Name: {fullName || registeredInfo.fullname}</ThemedText>
-        <ThemedText>Email: {registeredInfo.email}</ThemedText>
-      </View>
+        {/* Registered Info */}
+        <View style={styles.sectionCard}>
+          <ThemedText type="defaultSemiBold">Registered Information</ThemedText>
+          <ThemedText>Full Name: {fullName || registeredInfo.fullname}</ThemedText>
+          <ThemedText>Email: {registeredInfo.email}</ThemedText>
+        </View>
 
-      {/* User Inputs */}
-      <View style={styles.sectionCard}>
-        <ThemedText>Phone Number</ThemedText>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your 10-digit phone number"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-        />
-
-        <ThemedText>Weight</ThemedText>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your weight (kg)"
-          value={weight}
-          onChangeText={setWeight}
-          keyboardType="numeric"
-        />
-
-        <ThemedText>Profile Photo</ThemedText>
-        <Pressable onPress={pickImage} style={styles.uploadButton}>
-          <ThemedText>Upload Profile Photo</ThemedText>
-        </Pressable>
-        {photoUri && (
-          <Image
-            source={{ uri: photoUri }}
-            style={{ width: 100, height: 100, borderRadius: 50, marginTop: 8 }}
+        {/* User Inputs */}
+        <View style={styles.sectionCard}>
+          <ThemedText>Phone Number</ThemedText>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your 10-digit phone number"
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
           />
-        )}
-        {photoUri && <ThemedText>Photo selected</ThemedText>}
 
-        <ThemedText>Height</ThemedText>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your height (cm)"
-          value={height}
-          onChangeText={setHeight}
-          keyboardType="numeric"
-        />
+          <ThemedText>Weight (kg)</ThemedText>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your weight (kg)"
+            value={weight}
+            onChangeText={setWeight}
+            keyboardType="numeric"
+          />
 
-        <ThemedText>Age</ThemedText>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your age"
-          value={age}
-          onChangeText={setAge}
-          keyboardType="numeric"
-        />
+          <ThemedText>Profile Photo (Full Body)</ThemedText>
+          <Pressable onPress={pickImage} style={styles.uploadButton} disabled={uploading}>
+            <ThemedText>
+              {uploading ? `Uploading... ${uploadProgress}%` : 'Upload Profile Photo'}
+            </ThemedText>
+          </Pressable>
+          {photoUri && (
+            <Image
+              source={{ uri: photoUri }}
+              style={{ width: 100, height: 100, borderRadius: 50, marginTop: 8 }}
+            />
+          )}
+          {photoUri && !uploading && <ThemedText style={{ color: 'green' }}>✓ Photo selected</ThemedText>}
 
-      <ThemedText>Gender</ThemedText>
-<View style={styles.pickerContainer}>
-  <Picker
-    selectedValue={gender}
-    onValueChange={(itemValue) => setGender(itemValue)}
-  >
-    <Picker.Item label="Select Gender" value="" />
-    <Picker.Item label="Male" value="Male" />
-    <Picker.Item label="Female" value="Female" />
-    <Picker.Item label="Other" value="Other" />
-  </Picker>
-</View>
+          <ThemedText>Height (cm)</ThemedText>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your height (cm)"
+            value={height}
+            onChangeText={setHeight}
+            keyboardType="numeric"
+          />
 
-        <ThemedText>City</ThemedText>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your city"
-          value={city}
-          onChangeText={setCity}
-        />
+          <ThemedText>Age</ThemedText>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your age"
+            value={age}
+            onChangeText={setAge}
+            keyboardType="numeric"
+          />
 
-        <ThemedText>State</ThemedText>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your state"
-          value={regionState}
-          onChangeText={setRegionState}
-        />
+          <ThemedText>Gender</ThemedText>
+          <View style={styles.genderContainer}>
+            <TouchableOpacity
+              style={[styles.genderButton, gender === 'Male' && styles.genderButtonSelected]}
+              onPress={() => setGender('Male')}
+            >
+              <ThemedText style={gender === 'Male' && styles.genderTextSelected}>Male</ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.genderButton, gender === 'Female' && styles.genderButtonSelected]}
+              onPress={() => setGender('Female')}
+            >
+              <ThemedText style={gender === 'Female' && styles.genderTextSelected}>Female</ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.genderButton, gender === 'Other' && styles.genderButtonSelected]}
+              onPress={() => setGender('Other')}
+            >
+              <ThemedText style={gender === 'Other' && styles.genderTextSelected}>Other</ThemedText>
+            </TouchableOpacity>
+          </View>
 
-        <ThemedText>Village</ThemedText>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your village"
-          value={village}
-          onChangeText={setVillage}
-        />
+          <ThemedText>City</ThemedText>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your city"
+            value={city}
+            onChangeText={setCity}
+          />
 
-        <Pressable onPress={onSave} style={styles.saveButton}>
-          <ThemedText style={{ color: '#fff' }}>Save</ThemedText>
-        </Pressable>
-      </View>
+          <ThemedText>State</ThemedText>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your state"
+            value={regionState}
+            onChangeText={setRegionState}
+          />
 
-    </ScrollView>
-  </ThemedView>
-);
+          <ThemedText>Village</ThemedText>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your village"
+            value={village}
+            onChangeText={setVillage}
+          />
+
+          <Pressable onPress={onSave} style={styles.saveButton} disabled={uploading}>
+            <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>
+              {uploading ? `Uploading... ${uploadProgress}%` : 'Save Profile'}
+            </ThemedText>
+          </Pressable>
+        </View>
+
+      </ScrollView>
+    </ThemedView>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -308,7 +388,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   uploadButton: {
-    padding: 8,
+    padding: 12,
     borderRadius: 8,
     backgroundColor: 'rgba(127,127,127,0.15)',
     marginVertical: 8,
@@ -316,20 +396,750 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: 16,
-    padding: 12,
+    padding: 14,
     borderRadius: 8,
     backgroundColor: '#3B82F6',
     alignItems: 'center',
   },
-  pickerContainer: {
-  borderWidth: 1,
-  borderColor: 'rgba(127,127,127,0.35)',
-  borderRadius: 10,
-  marginBottom: 8,
-  backgroundColor: 'rgba(127,127,127,0.08)',
-},
+  genderContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  genderButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(127,127,127,0.35)',
+    backgroundColor: 'rgba(127,127,127,0.08)',
+    alignItems: 'center',
+  },
+  genderButtonSelected: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  genderTextSelected: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
 });
 
+// firebase storage - image upload
+// import React, { useCallback, useEffect, useMemo, useState } from 'react';
+// import { Image, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+// import { ThemedText } from '@/components/themed-text';
+// import { ThemedView } from '@/components/themed-view';
+// import * as ImagePicker from 'expo-image-picker';
+// import { useRouter } from 'expo-router';
+// import { auth, db, storage } from '@/firebase';
+// import { doc, getDoc, setDoc } from 'firebase/firestore';
+// import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+// import { updateProfile } from 'firebase/auth';
+// import { Picker } from '@react-native-picker/picker';
+
+// export default function ProfileScreen() {
+//   const router = useRouter();
+//   const user = auth.currentUser;
+
+//   // Inputs (user fills manually)
+//   const [fullName, setFullName] = useState('');
+//   const [phone, setPhone] = useState('');
+//   const [weight, setWeight] = useState('');
+//   const [height, setHeight] = useState('');
+//   const [age, setAge] = useState('');
+//   const [gender, setGender] = useState('');
+//   const [city, setCity] = useState('');
+//   const [regionState, setRegionState] = useState('');
+//   const [village, setVillage] = useState('');
+//   const [photoUri, setPhotoUri] = useState<string | null>(null);
+
+//   // Full name & email from logged-in user
+//   const registeredInfo = useMemo(() => ({
+//     fullname: user?.displayName || '',
+//     email: user?.email || '',
+//   }), [user]);
+
+//   // Load existing profile from Firestore
+//   const loadProfile = useCallback(async () => {
+//     if (!user) return;
+//     try {
+//       const docRef = doc(db, 'users', user.uid);
+//       const docSnap = await getDoc(docRef);
+//       if (docSnap.exists()) {
+//         const data = docSnap.data();
+//         setFullName(data.fullname || '');
+//         setPhone(data.phone || '');
+//         setWeight(data.weight || '');
+//         setHeight(data.height || '');
+//         setAge(data.age || '');
+//         setGender(data.gender || '');
+//         setCity(data.city || '');
+//         setRegionState(data.regionState || '');
+//         setVillage(data.village || '');
+//         setPhotoUri(data.photoURL || null);
+//       }
+//     } catch (error) {
+//       console.error('Error loading profile:', error);
+//     }
+//   }, [user]);
+
+//   useEffect(() => {
+//     loadProfile();
+//   }, [loadProfile]);
+
+//   // Pick profile image
+//   const pickImage = useCallback(async () => {
+//     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+//     if (status !== 'granted') {
+//       Alert.alert('Permission required', 'We need access to your photos.');
+//       return;
+//     }
+//     const result = await ImagePicker.launchImageLibraryAsync({
+//       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+//       allowsEditing: true,
+//       aspect: [1, 1],
+//       quality: 0.8,
+//     });
+//     if (!result.canceled) {
+//       setPhotoUri(result.assets[0].uri);
+//     }
+//   }, []);
+
+//   // Upload image to Firebase Storage
+//  const uploadProfilePhoto = async (uri: string) => {
+//   if (!user) return null;
+
+//   try {
+//     // Expo URI to Blob
+//     const response = await fetch(uri);
+//     const blob = await response.blob();
+
+//     // Firebase Storage reference
+//     const storageRef = ref(storage, `profile_photos/${user.uid}.jpg`);
+
+//     // Upload
+//     await uploadBytes(storageRef, blob);
+
+//     // Get downloadable URL
+//     const downloadURL = await getDownloadURL(storageRef);
+//     return downloadURL;
+//   } catch (error) {
+//     console.error("Upload failed:", error);
+//     Alert.alert("Error", "Failed to upload photo.");
+//     return null;
+//   }
+// };
+
+//   // Save profile to Firestore
+//   const onSave = useCallback(async () => {
+//     if (!user) return;
+
+//       // 🔹 Validations
+//   if (!fullName || !phone || !weight || !height || !age || !gender || !city || !regionState || !village) {
+//     Alert.alert("Validation Error", "All fields are required.");
+//     return;
+//   }
+
+//   // Phone number validation (10 digits)
+//   const phoneRegex = /^[0-9]{10}$/;
+//   if (!phoneRegex.test(phone)) {
+//     Alert.alert("Validation Error", "Phone number must be 10 digits.");
+//     return;
+//   }
+
+//   // Height validation (in cm, numeric & range check)
+//   const heightNum = parseInt(height, 10);
+//   if (isNaN(heightNum) || heightNum < 50 || heightNum > 300) {
+//     Alert.alert("Validation Error", "Height must be a valid number between 50cm and 300cm.");
+//     return;
+//   }
+// // Photo validation (required)
+// if (!photoUri) {
+//   Alert.alert("Validation Error", "Profile photo is required (full-body photo).");
+//   return;
+// }
+//   // Weight validation (in kg, numeric & range check)
+//   const weightNum = parseInt(weight, 10);
+//   if (isNaN(weightNum) || weightNum < 20 || weightNum > 500) {
+//     Alert.alert("Validation Error", "Weight must be a valid number between 20kg and 500kg.");
+//     return;
+//   }
+
+//   // Age validation
+//   const ageNum = parseInt(age, 10);
+//   if (isNaN(ageNum) || ageNum < 1 || ageNum > 120) {
+//     Alert.alert("Validation Error", "Age must be a valid number between 1 and 120.");
+//     return;
+//   }
+//   if (!gender) {
+//   Alert.alert("Validation Error", "Please select your gender.");
+//   return;
+// }
+
+// let photoURL = photoUri;
+// if (photoUri && !photoUri.startsWith('https://')) {
+//   const uploaded = await uploadProfilePhoto(photoUri);
+//   if (uploaded) {
+//     photoURL = uploaded;
+//   }
+// }
+
+//     try {
+//       await setDoc(doc(db, 'users', user.uid), {
+//         fullname: fullName, 
+//         phone,
+//         weight : weightNum,
+//         height : heightNum,
+//         age : ageNum,
+//         gender,
+//         city,
+//         regionState,
+//         village,
+//         photoURL,
+//         updatedAt: new Date().toISOString(),
+//       }, { merge: true });
+
+//        // 🔹 Firebase Auth user profile update
+//     await updateProfile(user, {
+//       displayName: fullName,
+//       photoURL: photoURL || user.photoURL,
+//     });
+
+//       Alert.alert('Success', 'Profile updated successfully!', [
+//         { text: 'OK', onPress: () => router.replace('/(tabs)') },
+//       ]);
+//     } catch (error) {
+//       console.error('Error saving profile:', error);
+//       Alert.alert('Error', 'Failed to save profile.');
+//     }
+//   }, [user, phone, weight, height, age, gender, city, regionState, village, photoUri, router]);
+
+//   return (
+//   <ThemedView style={{ flex: 1 }}>
+//     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+
+//       {/* Registered Info */}
+//       <View style={styles.sectionCard}>
+//         <ThemedText type="defaultSemiBold">Registered Information</ThemedText>
+//         <ThemedText>Full Name: {fullName || registeredInfo.fullname}</ThemedText>
+//         <ThemedText>Email: {registeredInfo.email}</ThemedText>
+//       </View>
+
+//       {/* User Inputs */}
+//       <View style={styles.sectionCard}>
+//         <ThemedText>Phone Number</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your 10-digit phone number"
+//           value={phone}
+//           onChangeText={setPhone}
+//           keyboardType="phone-pad"
+//         />
+
+//         <ThemedText>Weight</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your weight (kg)"
+//           value={weight}
+//           onChangeText={setWeight}
+//           keyboardType="numeric"
+//         />
+
+//         <ThemedText>Profile Photo</ThemedText>
+//         <Pressable onPress={pickImage} style={styles.uploadButton}>
+//           <ThemedText>Upload Profile Photo</ThemedText>
+//         </Pressable>
+//         {photoUri && (
+//           <Image
+//             source={{ uri: photoUri }}
+//             style={{ width: 100, height: 100, borderRadius: 50, marginTop: 8 }}
+//           />
+//         )}
+//         {photoUri && <ThemedText>Photo selected</ThemedText>}
+
+//         <ThemedText>Height</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your height (cm)"
+//           value={height}
+//           onChangeText={setHeight}
+//           keyboardType="numeric"
+//         />
+
+//         <ThemedText>Age</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your age"
+//           value={age}
+//           onChangeText={setAge}
+//           keyboardType="numeric"
+//         />
+
+//       <ThemedText>Gender</ThemedText>
+// <View style={styles.pickerContainer}>
+//   <Picker
+//     selectedValue={gender}
+//     onValueChange={(itemValue) => setGender(itemValue)}
+//   >
+//     <Picker.Item label="Select Gender" value="" />
+//     <Picker.Item label="Male" value="Male" />
+//     <Picker.Item label="Female" value="Female" />
+//     <Picker.Item label="Other" value="Other" />
+//   </Picker>
+// </View>
+
+//         <ThemedText>City</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your city"
+//           value={city}
+//           onChangeText={setCity}
+//         />
+
+//         <ThemedText>State</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your state"
+//           value={regionState}
+//           onChangeText={setRegionState}
+//         />
+
+//         <ThemedText>Village</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your village"
+//           value={village}
+//           onChangeText={setVillage}
+//         />
+
+//         <Pressable onPress={onSave} style={styles.saveButton}>
+//           <ThemedText style={{ color: '#fff' }}>Save</ThemedText>
+//         </Pressable>
+//       </View>
+
+//     </ScrollView>
+//   </ThemedView>
+// );
+// }
+
+// const styles = StyleSheet.create({
+//   container: { padding: 16, gap: 16 },
+//   sectionCard: { gap: 12, padding: 12, borderRadius: 12, backgroundColor: 'rgba(127,127,127,0.08)' },
+//   input: {
+//     height: 44,
+//     borderRadius: 10,
+//     borderWidth: 1,
+//     borderColor: 'rgba(127,127,127,0.35)',
+//     paddingHorizontal: 12,
+//     backgroundColor: 'rgba(127,127,127,0.08)',
+//     marginBottom: 8,
+//   },
+//   uploadButton: {
+//     padding: 8,
+//     borderRadius: 8,
+//     backgroundColor: 'rgba(127,127,127,0.15)',
+//     marginVertical: 8,
+//     alignItems: 'center',
+//   },
+//   saveButton: {
+//     marginTop: 16,
+//     padding: 12,
+//     borderRadius: 8,
+//     backgroundColor: '#3B82F6',
+//     alignItems: 'center',
+//   },
+//   pickerContainer: {
+//   borderWidth: 1,
+//   borderColor: 'rgba(127,127,127,0.35)',
+//   borderRadius: 10,
+//   marginBottom: 8,
+//   backgroundColor: 'rgba(127,127,127,0.08)',
+// },
+// });
+
+
+
+// 3rd supabase - image upload
+// import React, { useCallback, useEffect, useMemo, useState } from 'react';
+// import { Image, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+// import { ThemedText } from '@/components/themed-text';
+// import { ThemedView } from '@/components/themed-view';
+// import * as ImagePicker from 'expo-image-picker';
+// import { useRouter } from 'expo-router';
+// import { auth, db } from '@/firebase';
+// import { doc, getDoc, setDoc } from 'firebase/firestore';
+// // import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+// import { updateProfile } from 'firebase/auth';
+// import { Picker } from '@react-native-picker/picker';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+// import { supabase } from '@/assets/supabaseClient';
+
+// export default function ProfileScreen() {
+//   const router = useRouter();
+//   const user = auth.currentUser;
+
+//   // Inputs (user fills manually)
+//   const [fullName, setFullName] = useState('');
+//   const [phone, setPhone] = useState('');
+//   const [weight, setWeight] = useState('');
+//   const [height, setHeight] = useState('');
+//   const [age, setAge] = useState('');
+//   const [gender, setGender] = useState('');
+//   const [city, setCity] = useState('');
+//   const [regionState, setRegionState] = useState('');
+//   const [village, setVillage] = useState('');
+//   const [photoUri, setPhotoUri] = useState<string | null>(null);
+
+//   // Full name & email from logged-in user
+//   const registeredInfo = useMemo(() => ({
+//     fullname: user?.displayName || '',
+//     email: user?.email || '',
+//   }), [user]);
+
+//   // Load existing profile from Firestore
+//   const loadProfile = useCallback(async () => {
+//     if (!user) return;
+//     try {
+//       const docRef = doc(db, 'users', user.uid);
+//       const docSnap = await getDoc(docRef);
+//       if (docSnap.exists()) {
+//         const data = docSnap.data();
+//         setFullName(data.fullname || '');
+//         setPhone(data.phone || '');
+//         setWeight(data.weight || '');
+//         setHeight(data.height || '');
+//         setAge(data.age || '');
+//         setGender(data.gender || '');
+//         setCity(data.city || '');
+//         setRegionState(data.regionState || '');
+//         setVillage(data.village || '');
+//         setPhotoUri(data.photoURL || null);
+//       }
+//     } catch (error) {
+//       console.error('Error loading profile:', error);
+//     }
+//   }, [user]);
+
+//   useEffect(() => {
+//     loadProfile();
+//   }, [loadProfile]);
+
+//   // Pick profile image
+//   const pickImage = useCallback(async () => {
+//     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+//     if (status !== 'granted') {
+//       Alert.alert('Permission required', 'We need access to your photos.');
+//       return;
+//     }
+//     const result = await ImagePicker.launchImageLibraryAsync({
+//       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+//       allowsEditing: true,
+//       aspect: [1, 1],
+//       quality: 0.8,
+//     });
+//     if (!result.canceled) {
+//       setPhotoUri(result.assets[0].uri);
+//     }
+//   }, []);
+
+//   // Convert local URI to Blob
+// const uriToBlob = async (uri: string): Promise<Blob> => {
+//   const response = await fetch(uri);
+//   const blob = await response.blob();
+//   return blob;
+// };
+
+
+// // Upload image to Supabase Storage
+// const uploadProfilePhoto = async (uri: string) => {
+//   if (!user) return null;
+
+//   try {
+//     // Convert local URI to Blob
+//     const response = await fetch(uri);
+//     const blob = await response.blob();
+
+//     // Generate unique file name
+//     const ext = uri.split('.').pop()?.split('?')[0] ?? 'jpg';
+//     const storagePath = `profile_photos/${user.uid}.${ext}`;
+
+//     // Upload to Supabase
+//     const { error } = await supabase.storage
+//       .from('ImageBucket') // <-- your bucket name
+//       .upload(storagePath, blob, {
+//         contentType: ext === 'png' ? 'image/png' : 'image/jpeg',
+//         upsert: true, // overwrite if exists
+//       });
+
+//     if (error) throw error;
+
+//     // Get public URL
+//     const { data } = supabase.storage
+//       .from('ImageBucket')
+//       .getPublicUrl(storagePath);
+
+//     return data.publicUrl;
+//   } catch (error) {
+//     console.error('Supabase upload failed:', error);
+//     Alert.alert('Error', 'Failed to upload photo.');
+//     return null;
+//   }
+// };
+
+// console.log("Uploading photo URI:", photoUri);
+
+// //  const uploadProfilePhoto = async (uri: string) => {
+// //   if (!user) return null;
+
+// //   try {
+// //     // Expo URI to Blob using XMLHttpRequest (alternative)
+// //     const blob = await new Promise<Blob>((resolve, reject) => {
+// //   const xhr = new XMLHttpRequest();
+// //   xhr.onload = function() { resolve(xhr.response as Blob); }; // cast here
+// //   xhr.onerror = function() { reject(new TypeError("Network request failed")); };
+// //   xhr.responseType = 'blob';
+// //   xhr.open("GET", uri, true);
+// //   xhr.send(null);
+// // });
+
+// //     // Firebase Storage reference
+// //     const storageRef = ref(storage, `profile_photos/${user.uid}.jpg`);
+
+// //     // Upload
+// //     await uploadBytes(storageRef, blob);
+
+// //     // Get downloadable URL
+// //     const downloadURL = await getDownloadURL(storageRef);
+// //     return downloadURL;
+// //   } catch (error) {
+// //     console.error("Upload failed:", error);
+// //     Alert.alert("Error", "Failed to upload photo.");
+// //     return null;
+// //   }
+// // };
+
+//   // Save profile to Firestore
+//   const onSave = useCallback(async () => {
+//     if (!user) return;
+
+//       // 🔹 Validations
+//   if (!fullName || !phone || !weight || !height || !age || !gender || !city || !regionState || !village) {
+//     Alert.alert("Validation Error", "All fields are required.");
+//     return;
+//   }
+
+//   // Phone number validation (10 digits)
+//   const phoneRegex = /^[0-9]{10}$/;
+//   if (!phoneRegex.test(phone)) {
+//     Alert.alert("Validation Error", "Phone number must be 10 digits.");
+//     return;
+//   }
+
+//   // Height validation (in cm, numeric & range check)
+//   const heightNum = parseInt(height, 10);
+//   if (isNaN(heightNum) || heightNum < 50 || heightNum > 300) {
+//     Alert.alert("Validation Error", "Height must be a valid number between 50cm and 300cm.");
+//     return;
+//   }
+
+//   // Weight validation (in kg, numeric & range check)
+//   const weightNum = parseInt(weight, 10);
+//   if (isNaN(weightNum) || weightNum < 20 || weightNum > 500) {
+//     Alert.alert("Validation Error", "Weight must be a valid number between 20kg and 500kg.");
+//     return;
+//   }
+
+//   // Age validation
+//   const ageNum = parseInt(age, 10);
+//   if (isNaN(ageNum) || ageNum < 1 || ageNum > 120) {
+//     Alert.alert("Validation Error", "Age must be a valid number between 1 and 120.");
+//     return;
+//   }
+//   if (!gender) {
+//   Alert.alert("Validation Error", "Please select your gender.");
+//   return;
+// }
+//  // Upload profile photo only if local URI
+// let photoURL: string | null = photoUri;
+// if (photoURL && !photoURL.startsWith('https://')) {
+//   const uploaded = await uploadProfilePhoto(photoURL);
+//   if (!uploaded) return; // stop if upload failed
+//   photoURL = uploaded;
+// }
+
+//     try {
+//       await setDoc(doc(db, 'users', user.uid), {
+//         fullname: fullName, 
+//         phone,
+//         weight : weightNum,
+//         height : heightNum,
+//         age : ageNum,
+//         gender,
+//         city,
+//         regionState,
+//         village,
+//         photoURL,
+//         updatedAt: new Date().toISOString(),
+//       }, { merge: true });
+
+//        // 🔹 Firebase Auth user profile update
+//     await updateProfile(user, {
+//       displayName: fullName,
+//       photoURL: photoURL || user.photoURL,
+//     });
+
+//       Alert.alert('Success', 'Profile updated successfully!', [
+//         { text: 'OK', onPress: () => router.replace('/(tabs)') },
+//       ]);
+//     } catch (error) {
+//       console.error('Error saving profile:', error);
+//       Alert.alert('Error', 'Failed to save profile.');
+//     }
+//   }, [user, phone, weight, height, age, gender, city, regionState, village, photoUri, router]);
+
+//   return (
+//   <ThemedView style={{ flex: 1 }}>
+//     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+
+//       {/* Registered Info */}
+//       <View style={styles.sectionCard}>
+//         <ThemedText type="defaultSemiBold">Registered Information</ThemedText>
+//         <ThemedText>Full Name: {fullName || registeredInfo.fullname}</ThemedText>
+//         <ThemedText>Email: {registeredInfo.email}</ThemedText>
+//       </View>
+
+//       {/* User Inputs */}
+//       <View style={styles.sectionCard}>
+//         <ThemedText>Phone Number</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your 10-digit phone number"
+//           value={phone}
+//           onChangeText={setPhone}
+//           keyboardType="phone-pad"
+//         />
+
+//         <ThemedText>Weight</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your weight (kg)"
+//           value={weight}
+//           onChangeText={setWeight}
+//           keyboardType="numeric"
+//         />
+
+//         <ThemedText>Profile Photo</ThemedText>
+//         <Pressable onPress={pickImage} style={styles.uploadButton}>
+//           <ThemedText>Upload Profile Photo</ThemedText>
+//         </Pressable>
+//         {photoUri && (
+//           <Image
+//             source={{ uri: photoUri }}
+//             style={{ width: 100, height: 100, borderRadius: 50, marginTop: 8 }}
+//           />
+//         )}
+//         {photoUri && <ThemedText>Photo selected</ThemedText>}
+
+//         <ThemedText>Height</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your height (cm)"
+//           value={height}
+//           onChangeText={setHeight}
+//           keyboardType="numeric"
+//         />
+
+//         <ThemedText>Age</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your age"
+//           value={age}
+//           onChangeText={setAge}
+//           keyboardType="numeric"
+//         />
+
+//       <ThemedText>Gender</ThemedText>
+// <View style={styles.pickerContainer}>
+//   <Picker
+//     selectedValue={gender}
+//     onValueChange={(itemValue) => setGender(itemValue)}
+//   >
+//     <Picker.Item label="Select Gender" value="" />
+//     <Picker.Item label="Male" value="Male" />
+//     <Picker.Item label="Female" value="Female" />
+//     <Picker.Item label="Other" value="Other" />
+//   </Picker>
+// </View>
+
+//         <ThemedText>City</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your city"
+//           value={city}
+//           onChangeText={setCity}
+//         />
+
+//         <ThemedText>State</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your state"
+//           value={regionState}
+//           onChangeText={setRegionState}
+//         />
+
+//         <ThemedText>Village</ThemedText>
+//         <TextInput
+//           style={styles.input}
+//           placeholder="Enter your village"
+//           value={village}
+//           onChangeText={setVillage}
+//         />
+
+//         <Pressable onPress={onSave} style={styles.saveButton}>
+//           <ThemedText style={{ color: '#fff' }}>Save</ThemedText>
+//         </Pressable>
+//       </View>
+
+//     </ScrollView>
+//   </ThemedView>
+// );
+// }
+
+// const styles = StyleSheet.create({
+//   container: { padding: 16, gap: 16 },
+//   sectionCard: { gap: 12, padding: 12, borderRadius: 12, backgroundColor: 'rgba(127,127,127,0.08)' },
+//   input: {
+//     height: 44,
+//     borderRadius: 10,
+//     borderWidth: 1,
+//     borderColor: 'rgba(127,127,127,0.35)',
+//     paddingHorizontal: 12,
+//     backgroundColor: 'rgba(127,127,127,0.08)',
+//     marginBottom: 8,
+//   },
+//   uploadButton: {
+//     padding: 8,
+//     borderRadius: 8,
+//     backgroundColor: 'rgba(127,127,127,0.15)',
+//     marginVertical: 8,
+//     alignItems: 'center',
+//   },
+//   saveButton: {
+//     marginTop: 16,
+//     padding: 12,
+//     borderRadius: 8,
+//     backgroundColor: '#3B82F6',
+//     alignItems: 'center',
+//   },
+//   pickerContainer: {
+//   borderWidth: 1,
+//   borderColor: 'rgba(127,127,127,0.35)',
+//   borderRadius: 10,
+//   marginBottom: 8,
+//   backgroundColor: 'rgba(127,127,127,0.08)',
+// },
+// });
 
 
 
@@ -339,6 +1149,7 @@ const styles = StyleSheet.create({
 
 
 
+//1st code
 // import { ThemedText } from '@/components/themed-text';
 // import { ThemedView } from '@/components/themed-view';
 // import { Image } from 'expo-image';

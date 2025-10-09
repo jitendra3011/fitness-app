@@ -109,8 +109,11 @@ function SidebarLinks() {
         <ThemedText type="defaultSemiBold" style={styles.navText}>Terms & Conditions</ThemedText>
       </Pressable>
       <Pressable style={styles.navItem} onPress={() => { router.push('/MyActivities'); close(); }}>
-        <IconSymbol size={20} name="doc.plaintext" color="#9CA3AF" />
-        <ThemedText type="defaultSemiBold" style={styles.navText}>My Activities</ThemedText>
+        <IconSymbol size={20} name="video" color="#9CA3AF" />  
+        <ThemedText type="defaultSemiBold" style={styles.navText}> My Activities </ThemedText> 
+      </Pressable><Pressable style={styles.navItem} onPress={() => { router.push('/blogs'); close(); }}>
+        <IconSymbol size={20} name="blogs" color="#9CA3AF" />  
+        <ThemedText type="defaultSemiBold" style={styles.navText}> Blogs </ThemedText> 
       </Pressable>
     </View>
   );
