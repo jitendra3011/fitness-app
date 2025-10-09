@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { router } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -83,7 +84,7 @@ export default function BlogsScreen() {
     : blogPosts.filter(post => post.category === selectedCategory);
 
   const renderBlogPost = (post: any) => (
-    <TouchableOpacity key={post.id} style={styles.blogCard}>
+    <TouchableOpacity style={styles.blogCard} onPress={() => router.push({ pathname: '/blog-detail/[id]', params: { id: post.id.toString() } })}>
       <Image source={{ uri: post.image }} style={styles.blogImage} />
       <View style={styles.blogContent}>
         <View style={styles.blogHeader}>
