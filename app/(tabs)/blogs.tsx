@@ -84,19 +84,23 @@ export default function BlogsScreen() {
     : blogPosts.filter(post => post.category === selectedCategory);
 
   const renderBlogPost = (post: any) => (
-    <TouchableOpacity style={styles.blogCard} onPress={() => router.push({ pathname: '/blog-detail/[id]', params: { id: post.id.toString() } })}>
-      <Image source={{ uri: post.image }} style={styles.blogImage} />
-      <View style={styles.blogContent}>
-        <View style={styles.blogHeader}>
-          <Text style={styles.category}>{categories.find(cat => cat.id === post.category)?.name}</Text>
-          <Text style={styles.date}>{post.date} • {post.readTime}</Text>
-        </View>
-        <Text style={styles.blogTitle}>{post.title}</Text>
-        <Text style={styles.blogExcerpt}>{post.excerpt}</Text>
-        <Text style={styles.author}>By {post.author}</Text>
+  <TouchableOpacity
+    key={post.id} // ✅ Add key here
+    style={styles.blogCard}
+    onPress={() => router.push({ pathname: '/blog-detail/[id]', params: { id: post.id.toString() } })}
+  >
+    <Image source={{ uri: post.image }} style={styles.blogImage} />
+    <View style={styles.blogContent}>
+      <View style={styles.blogHeader}>
+        <Text style={styles.category}>{categories.find(cat => cat.id === post.category)?.name}</Text>
+        <Text style={styles.date}>{post.date} • {post.readTime}</Text>
       </View>
-    </TouchableOpacity>
-  );
+      <Text style={styles.blogTitle}>{post.title}</Text>
+      <Text style={styles.blogExcerpt}>{post.excerpt}</Text>
+      <Text style={styles.author}>By {post.author}</Text>
+    </View>
+  </TouchableOpacity>
+);
 
   return (
     <ScrollView style={styles.container}>
