@@ -78,7 +78,7 @@ import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { IconSymbol } from '@/components/ui/professional-icon';
 import { Sidebar } from '@/components/ui/sidebar';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -105,7 +105,7 @@ export default function TabLayout() {
         ),
         headerRight: ({ tintColor }) => (
           <View style={{ paddingRight: 12 }}>
-            <Pressable onPress={() => router.push('/profile')}>
+            <Pressable onPress={() => router.push('/admin')}>
               <IconSymbol
                 size={20}
                 name="profile"

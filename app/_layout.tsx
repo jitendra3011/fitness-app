@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { IconSymbol } from '@/components/ui/professional-icon';
 import { Sidebar, useSidebar } from '@/components/ui/sidebar';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { auth } from '../firebase';
