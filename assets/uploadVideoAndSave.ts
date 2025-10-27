@@ -6,7 +6,8 @@ const db = getFirestore();
 export async function uploadVideoAndSave(
   userId: string,
   activityName: string,
-  uri: string
+  uri: string,
+  metadata: Record<string, any> = {}
 ) {
   try {
     // Convert video to binary
@@ -32,13 +33,29 @@ export async function uploadVideoAndSave(
 
     const publicUrl = publicData.publicUrl;
 
+    // ✅ Extract metadata safely
+    const situpCount = metadata?.situpCount ?? 0;
+    const duration = metadata?.duration ?? 0;
+
+     // ✅ Log to confirm correct values before saving
+    console.log('🔥 Uploading Sit-Ups Data:', {
+      userId,
+      activityName,
+      situpCount,
+      duration,
+      publicUrl,
+    });
+
     // Save in Firestore
     const videosColRef = collection(db, 'users', userId, 'videos');
     const docRef = await addDoc(videosColRef, {
       activity: activityName,
       url: publicUrl,
       storagePath, // ✅ Delete ke liye zaroori
+       situpCount, // ✅ explicitly store
+      duration,   // ✅ explicitly store
       uploadedAt: serverTimestamp(),
+      // ...metadata, // ✅ merge extra details
     });
 
     return { publicUrl, storagePath, docId: docRef.id };

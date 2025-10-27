@@ -1,4 +1,5 @@
-// firebase.js
+// whem we deploy code it should have to use code ..upper code do commemt it was just for testimg
+// // firebase.js
 import { initializeApp } from "firebase/app";
 // import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
